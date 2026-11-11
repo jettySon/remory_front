@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="360" viewBox="0 0 420 360" fill="none">
+  <defs>
+    <linearGradient id="fleece" x1="160" y1="86" x2="246" y2="302" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFEF9"/>
+      <stop offset=".62" stop-color="#FFF8FD"/>
+      <stop offset="1" stop-color="#E4D5F3"/>
+    </linearGradient>
+    <radialGradient id="ground">
+      <stop stop-color="#9975BB" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#9975BB" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="210" cy="306" rx="111" ry="16" fill="url(#ground)"/>
+  <path d="M299 175c10-18 25-33 41-37 10-2 16 5 13 14 9-3 16 1 15 9-2 16-21 32-49 36Z" fill="#CDB9E9"/>
+  <path d="M185 260q-6 23-19 27M244 262q-3 23-16 28" stroke="#C99257" stroke-width="9" stroke-linecap="round"/>
+  <path d="M96 210c-10-25 3-49 29-59 5-24 28-40 54-38 15-20 42-28 67-17 33-2 62 22 65 53 14 15 16 34 10 52 4 30-21 58-53 61-20 17-53 19-76 7-25 8-53 0-67-17-17-5-29-21-29-42Z" fill="url(#fleece)"/>
+  <path d="M149 177c-16-6-30-22-42-35-9-10-20-7-22 3-1 5 1 11 4 16-8-3-15 2-13 10 5 19 26 35 48 35 17 0 31-14 25-29Z" fill="#E1D1F2"/>
+  <path d="M248 163q9-6 18-2 3 2 0 5l-6 6q-2 2-4 0l-8-5q-3-2 0-4Z" fill="#EDB77A"/>
+  <circle cx="236" cy="150" r="4" fill="#63516E"/>
+  <circle cx="278" cy="147" r="4" fill="#63516E"/>
+  <path d="M254 222c-13-2-21-11-19-23 12 3 20 12 19 23Zm0 0c0-14 9-24 23-24-2 14-10 23-23 24Z" fill="#9BBFA8"/>
+</svg>

@@ -1,0 +1,21 @@
+# Dependencies and generated output
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Local environment and editor settings
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+.idea/
+.vscode/
+.DS_Store
+
+# Personal development notes
+/DEV_NOTES.local.md
