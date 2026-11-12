@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import {
   ArrowLeft, ArrowRight, BarChart3, BookHeart, BookOpen,
   Check, ChevronRight, Cloud, Code2, Flower2,
-  Heart, Home, Languages, Landmark, LibraryBig, Plus,
+  Heart, Home, Languages, Landmark, LibraryBig, Moon, Plus, Sun,
   RotateCcw, Search, Sparkles, X
 } from 'lucide-react';
 
@@ -70,8 +70,8 @@ function WeekRow({ logs }: { logs: ReviewLog[] }) {
 function Mascot({ className = '' }: { className?: string }) {
   return <img src="/mascot.svg" className={`mascot ${className}`} alt="볼이 발그레한 하얀 구름 캐릭터 몽이" draggable={false} />;
 }
-function AppHeader({ onStats, reviewsToday }: { onStats: () => void; reviewsToday: number }) {
-  return <header className="app-header"><div className="brand"><span className="brand-cloud"><Cloud size={21} strokeWidth={2.2}/></span><span>remory<span className="brand-dot">.</span></span></div><button className="header-streak" onClick={onStats} aria-label="나의 학습 기록 보기"><Flower2 size={15}/><span>{reviewsToday ? '오늘도 반짝이는 중' : '작은 발자국 모으기'}</span><ChevronRight size={14}/></button></header>;
+function AppHeader({ onStats, reviewsToday, dark, toggleTheme }: { onStats: () => void; reviewsToday: number; dark: boolean; toggleTheme: () => void }) {
+  return <header className="app-header"><div className="brand"><span className="brand-cloud"><Cloud size={21} strokeWidth={2.2}/></span><span>remory<span className="brand-dot">.</span></span></div><div className="header-actions"><button className="theme-toggle" type="button" aria-label="다크 모드" aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="header-streak" onClick={onStats} aria-label="나의 학습 기록 보기"><Flower2 size={15}/><span>{reviewsToday ? '오늘도 반짝이는 중' : '작은 발자국 모으기'}</span><ChevronRight size={14}/></button></div></header>;
 }
 function BottomNav({ page, onNavigate }: { page: Page; onNavigate: (next: Page) => void }) {
   const tabs = [
@@ -285,6 +285,8 @@ function CreateCardModal({ decks, defaultDeckId, onClose, onCreate }: { decks: D
 }
 
 export default function App() {
+  const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
+  const dark = theme === 'dark';
   const [page, setPage] = useState<Page>('home');
   const [decks, setDecks] = useStoredState<Deck[]>('recall-decks-v1', initialDecks);
   const [cards, setCards] = useStoredState<StudyCard[]>('recall-cards-v1', initialCards);
@@ -330,8 +332,8 @@ export default function App() {
     setNotice(`기억 카드 ${drafts.length}장을 심었어요 ♡`);
   };
   useEffect(()=>{if(!notice) return; const timer=window.setTimeout(()=>setNotice(''),2800); return()=>window.clearTimeout(timer);},[notice]);
-  return <div className="site-background"><div className="desktop-decoration"><div className="desktop-cloud">☁</div><div className="desktop-copy"><span>YOUR LITTLE MEMORY GARDEN</span><h2>작은 기억이<br/><em>꽃이 되는 곳.</em></h2><p>그날의 배움이 잊히지 않도록,<br/>오늘도 다정하게 다시 만나봐요.</p><div className="desktop-stars">✳ &nbsp; ✧ &nbsp; ✳</div></div></div>
-    <main className="phone-shell"><AppHeader onStats={()=>navigate('stats')} reviewsToday={todayReviews}/><div className="app-scroll" key={page}>
+  return <div className="site-background" data-theme={theme}><div className="desktop-decoration"><div className="desktop-cloud">☁</div><div className="desktop-copy"><span>YOUR LITTLE MEMORY GARDEN</span><h2>작은 기억이<br/><em>꽃이 되는 곳.</em></h2><p>그날의 배움이 잊히지 않도록,<br/>오늘도 다정하게 다시 만나봐요.</p><div className="desktop-stars">✳ &nbsp; ✧ &nbsp; ✳</div></div></div>
+    <main className="phone-shell"><AppHeader onStats={()=>navigate('stats')} reviewsToday={todayReviews} dark={dark} toggleTheme={() => setTheme(dark ? 'light' : 'dark')}/><div className="app-scroll" key={page}>
       {page==='home'&&<HomePage decks={decks} cards={cards} logs={logs} openDeck={openDeck} go={navigate} startReview={startReview}/>}
       {page==='decks'&&<DecksPage decks={decks} cards={cards} onOpen={openDeck} onCreate={()=>setModal('deck')}/>}
       {page==='deck-detail'&&selectedDeck&&<DeckDetailPage deck={selectedDeck} cards={selectedCards} back={()=>navigate('decks')} onAdd={()=>setModal('card')} onStudy={()=>startReview(selectedDeck.id)}/>}
