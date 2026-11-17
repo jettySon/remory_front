@@ -15,11 +15,13 @@ export function ReviewPage({
   flipped,
   flip,
   rate,
+  saving,
   restart,
   onCalendar,
   mode,
   onStats,
   onFreeReview,
+  emptyAction,
 }: {
   current?: StudyCard;
   theme?: DeckTheme;
@@ -29,12 +31,14 @@ export function ReviewPage({
   empty: boolean;
   flipped: boolean;
   flip: () => void;
+  saving: boolean;
   rate: (r: Rating) => void;
   restart: () => void;
   onCalendar: () => void;
   mode: ReviewMode;
   onStats: () => void;
   onFreeReview: () => void;
+  emptyAction?: { label: string; onClick: () => void };
 }) {
   const [choice, setChoice] = useState<string>();
   const title = { scheduled: '카드 복습', focus: '집중 복습', free: '자유 복습' }[mode];
@@ -80,8 +84,8 @@ export function ReviewPage({
           <Mascot />
         </div>
         <h1>지금 복습할 카드가 없어요.</h1>
-        <button className="big-primary" onClick={onFreeReview}>
-          자유 복습 <ArrowRight size={19} />
+        <button className="big-primary" onClick={emptyAction?.onClick ?? onFreeReview}>
+          {emptyAction?.label ?? '자유 복습'} <ArrowRight size={19} />
         </button>
         <button className="plain-link" onClick={onCalendar}>
           학습 캘린더 보기
@@ -149,7 +153,7 @@ export function ReviewPage({
           <p>답이 얼마나 잘 떠올랐나요?</p>
           <div className="rating-grid">
             {(['again', 'hard', 'good', 'easy'] as Rating[]).map((r) => (
-              <button className={`rating rating-${r}`} key={r} onClick={() => rate(r)}>
+              <button className={`rating rating-${r}`} key={r} disabled={saving} onClick={() => rate(r)}>
                 <span>{ratingLabels[r]}</span>
                 <small>
                   {r === 'again'

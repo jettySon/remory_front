@@ -18,11 +18,13 @@ export function AppHeader({
   dark,
   toggleTheme,
   onAccount,
+  signedIn,
 }: {
   onStats: () => void;
   reviewsToday: number;
   dark: boolean;
   toggleTheme: () => void;
+  signedIn: boolean;
   onAccount: (trigger: HTMLButtonElement) => void;
 }) {
   return (
@@ -57,7 +59,7 @@ export function AppHeader({
           onClick={(e) => onAccount(e.currentTarget)}
         >
           <UserRound size={16} aria-hidden="true" />
-          로그인
+          {signedIn ? '내 계정' : '로그인'}
         </button>
       </div>
     </header>

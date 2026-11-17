@@ -9,8 +9,10 @@ import type { DeckTheme } from '../../types';
 export function CreateDeckModal({
   onClose,
   onCreate,
+  saving,
 }: {
   onClose: () => void;
+  saving: boolean;
   onCreate: (title: string, subtitle: string, theme: DeckTheme, icon: string) => void;
 }) {
   const [title, setTitle] = useState('');
@@ -63,7 +65,7 @@ export function CreateDeckModal({
           <DeckIcon icon={kind.icon} />
           {title.trim() || kind.label}
         </div>
-        <button className="big-primary form-submit">
+        <button className="big-primary form-submit" disabled={saving}>
           덱 만들기 <ArrowRight size={18} />
         </button>
       </form>

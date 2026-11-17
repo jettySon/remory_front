@@ -13,10 +13,12 @@ export function CreateCardModal({
   defaultDeckId,
   onClose,
   onCreate,
+  saving,
 }: {
   decks: Deck[];
   defaultDeckId?: string;
   onClose: () => void;
+  saving: boolean;
   onCreate: (deckId: string, drafts: CardDraft[]) => void;
 }) {
   const [deckId, setDeckId] = useState(defaultDeckId || decks[0]?.id || '');
@@ -183,7 +185,9 @@ export function CreateCardModal({
         <button
           className="big-primary form-submit"
           disabled={
-            !deck || (bulk && (!rows.length || (excel && Boolean(reading || fileError || excelRowError))))
+            saving ||
+            !deck ||
+            (bulk && (!rows.length || (excel && Boolean(reading || fileError || excelRowError))))
           }
         >
           {bulk ? `${excel && excelRowError ? 0 : rows.length}장 등록하기` : '카드 저장'}{' '}

@@ -38,6 +38,7 @@ export function HomePage({
   go,
   startReview,
   onFreeReview,
+  onCreate,
 }: {
   decks: Deck[];
   cards: StudyCard[];
@@ -46,12 +47,15 @@ export function HomePage({
   go: (p: Page) => void;
   startReview: (deckId?: string) => void;
   onFreeReview: () => void;
+  onCreate: () => void;
 }) {
   const due = cards.filter(isDue).length;
   const completed = logs.filter((l) => localDay(l.date) === today()).length;
+  const hasCards = cards.length > 0;
+  const actionLabel = hasCards ? '자유 복습' : decks.length ? '첫 카드 추가' : '첫 덱 만들기';
   return (
     <div className="page home-page">
-      <section className="hero" aria-label="오늘의 복습">
+      <section className="hero" aria-label={hasCards ? '오늘의 복습' : '학습 시작'}>
         <div className="hero-orb orb-a" />
         <div className="hero-orb orb-b" />
         <Star className="hero-star first" />
@@ -60,14 +64,20 @@ export function HomePage({
         <span className="hero-petal p2">✧</span>
         <Mascot className="hero-mascot" />
         <div className="hero-content">
-          <h1>오늘의 복습</h1>
-          <p>{due > 0 ? '잊기 전에 한 번 더 떠올려 봐요.' : '지금 예정된 복습이 없어요.'}</p>
+          <h1>{hasCards ? '오늘의 복습' : '나의 작은 공부방'}</h1>
+          <p>
+            {due > 0
+              ? '잊기 전에 한 번 더 떠올려 봐요.'
+              : hasCards
+                ? '지금 예정된 복습이 없어요.'
+                : '기억하고 싶은 내용을 카드에 담아 보세요.'}
+          </p>
         </div>
         <button
           className="hero-action-card"
           type="button"
-          onClick={due > 0 ? () => startReview() : onFreeReview}
-          aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : '자유 복습할 덱 선택'}
+          onClick={due > 0 ? () => startReview() : hasCards ? onFreeReview : onCreate}
+          aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : actionLabel}
         >
           <svg
             className="hero-action-cloud"
@@ -95,7 +105,7 @@ export function HomePage({
               </strong>
             </span>
           ) : (
-            <span className="hero-free-label">자유 복습</span>
+            <span className="hero-free-label">{actionLabel}</span>
           )}
           <ArrowRight className="hero-action-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
         </button>
@@ -104,19 +114,21 @@ export function HomePage({
         <SectionHeading title="최근 7일 복습" />
         <WeekRow logs={logs} />
       </section>
-      <section>
-        <SectionHeading title="나의 작은 공부방" action="전체 보기" onClick={() => go('decks')} />
-        <div className="deck-grid">
-          {decks.slice(0, 4).map((d) => (
-            <DeckTile
-              key={d.id}
-              deck={d}
-              count={cards.filter((c) => c.deckId === d.id).length}
-              onClick={() => openDeck(d.id)}
-            />
-          ))}
-        </div>
-      </section>
+      {decks.length > 0 && (
+        <section>
+          <SectionHeading title="나의 작은 공부방" action="전체 보기" onClick={() => go('decks')} />
+          <div className="deck-grid">
+            {decks.slice(0, 4).map((d) => (
+              <DeckTile
+                key={d.id}
+                deck={d}
+                count={cards.filter((c) => c.deckId === d.id).length}
+                onClick={() => openDeck(d.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
       <button className="stat-shortcut" onClick={() => go('stats')}>
         <span className="stat-icon">
           <BarChart3 size={21} />

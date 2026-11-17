@@ -845,3 +845,10 @@ button { border: 0; }
 .free-deck-action strong { font-size: 13px; }
 .free-deck-action small { font-size: 11px; }
 [data-theme="dark"] .free-deck-action { background: #453357; color: var(--accent); }
+
+.account-intro p { overflow-wrap: anywhere; }
+.account-restore { display: grid; gap: 12px; }
+.account-restore p { margin: 0; }
+.sync-error { z-index: 25; max-width: min(calc(100% - 24px), 400px); }
+.sync-error button { flex: none; padding: 4px 6px; border-radius: 7px; background: #fff3; color: inherit; }
+.rating:disabled { opacity: .55; }

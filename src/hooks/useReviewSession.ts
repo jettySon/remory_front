@@ -4,7 +4,7 @@ import type { Rating, ReviewMode, StudyCard } from '../types';
 
 export function useReviewSession(
   cards: StudyCard[],
-  recordReview: (cardId: string, rating: Rating, mode: ReviewMode) => void,
+  recordReview: (cardId: string, rating: Rating, mode: ReviewMode) => Promise<boolean>,
 ) {
   const [sessionId, setSessionId] = useState(0);
   const [queue, setQueue] = useState<string[]>([]);
@@ -16,7 +16,7 @@ export function useReviewSession(
   const total = queue.length;
 
   function startQueue(ids: string[], nextMode: ReviewMode) {
-    setSessionId(previous => previous + 1);
+    setSessionId((previous) => previous + 1);
     setQueue(ids);
     setMode(nextMode);
     setProgress(0);
@@ -51,13 +51,25 @@ export function useReviewSession(
     setFlipped((previous) => !previous);
   }
 
-  function rate(rating: Rating) {
-    if (!current) return;
-    recordReview(current.id, rating, mode);
+  async function rate(rating: Rating) {
+    if (!current || !(await recordReview(current.id, rating, mode))) return;
     setFlipped(false);
     if (progress + 1 >= total) setFinished(true);
     else setProgress((previous) => previous + 1);
   }
 
-  return { sessionId, current, progress, total, flipped, finished, mode, start, startPractice, startFree, flip, rate };
+  return {
+    sessionId,
+    current,
+    progress,
+    total,
+    flipped,
+    finished,
+    mode,
+    start,
+    startPractice,
+    startFree,
+    flip,
+    rate,
+  };
 }
