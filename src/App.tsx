@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  ArrowLeft, ArrowRight, BarChart3, BookHeart, BookOpen,
+  ArrowLeft, ArrowRight, BarChart3, BookHeart, BookOpen, CalendarDays,
   Check, ChevronRight, Cloud, Code2, Flower2,
   Heart, Home, Languages, Landmark, LibraryBig, Moon, Plus, Sun,
   RotateCcw, Search, Sparkles, X
@@ -27,11 +27,6 @@ const initialCards: StudyCard[] = [
   { id: 'c4', deckId: 'english', front: 'resilient', back: '회복력이 있는, 탄력 있는\n\nShe remained resilient despite difficulties.', dueAt: yesterday(1), repetitions: 2 },
   { id: 'c5', deckId: 'java', front: '트랜잭션 ACID의 네 가지 속성은?', back: '원자성(Atomicity), 일관성(Consistency), 격리성(Isolation), 지속성(Durability)', dueAt: yesterday(1), repetitions: 0 },
   { id: 'c6', deckId: 'general', front: '망각곡선과 간격 반복의 차이는?', back: '망각곡선은 시간이 지남에 따라 기억이 약해지는 경향을 설명하고, 간격 반복은 복습 간격을 조절해 기억을 강화하는 학습 방법이에요.', dueAt: yesterday(1), repetitions: 0 }
-];
-const seedLogs: ReviewLog[] = [
-  ...[6, 5, 4, 3, 2, 1].flatMap((d, i) => Array.from({ length: [2, 3, 2, 4, 3, 5][i] }, (_, j) => ({ id: `seed-${d}-${j}`, cardId: 'seed', rating: 'good' as Rating, date: yesterday(d) }))),
-  { id: 'seed-today-1', cardId: 'seed', rating: 'good', date: yesterday() },
-  { id: 'seed-today-2', cardId: 'seed', rating: 'easy', date: yesterday() }
 ];
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const localDay = (date: string | Date) => new Date(date).toLocaleDateString('sv-SE');
@@ -78,7 +73,7 @@ function BottomNav({ page, onNavigate }: { page: Page; onNavigate: (next: Page) 
     { id: 'home' as Page, label: '홈', icon: Home },
     { id: 'decks' as Page, label: '학습 덱', icon: LibraryBig },
     { id: 'review' as Page, label: '복습', icon: BookHeart },
-    { id: 'garden' as Page, label: '기억 정원', icon: Flower2 }
+    { id: 'garden' as Page, label: '학습 기록', icon: CalendarDays }
   ];
   return <nav className="bottom-nav" aria-label="주요 화면">{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => onNavigate(id)} className={`nav-item ${page === id || (page === 'deck-detail' && id === 'decks') ? 'selected' : ''}`} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon size={21} strokeWidth={1.8}/></span><span>{label}</span></button>)}</nav>;
 }
@@ -87,9 +82,6 @@ function SectionHeading({ title, action, onClick }: { title: string; action?: st
 }
 function DeckTile({ deck, count, onClick }: { deck: Deck; count: number; onClick: () => void }) {
   return <button className={`deck-tile ${deck.theme}`} onClick={onClick}><div className="deck-tile-art"><span className="deck-icon"><DeckIcon icon={deck.icon}/></span><Star className="tile-sparkle"/></div><div><strong>{deck.title}</strong><span>{count} cards</span></div></button>;
-}
-function GardenArt({ large = false }: { large?: boolean }) {
-  return <div className={`garden-art ${large ? 'large' : ''}`}><img src="/garden.svg" alt="파스텔 하늘 아래 분홍색과 보라색 꽃이 피어나는 기억의 정원"/><span className="garden-floating-star s1">✦</span><span className="garden-floating-star s2">✧</span></div>;
 }
 function HomePage({ decks, cards, logs, openDeck, go, startReview }: {
   decks: Deck[]; cards: StudyCard[]; logs: ReviewLog[]; openDeck: (id: string) => void;
@@ -106,7 +98,6 @@ function HomePage({ decks, cards, logs, openDeck, go, startReview }: {
     </section>
     <section className="week-section"><div className="section-heading"><h3>이번 주의 작은 발자국</h3><span className="caption-side">매일의 조각 ✦</span></div><WeekRow logs={logs}/></section>
     <section><SectionHeading title="나의 작은 공부방" action="전체보기" onClick={() => go('decks')}/><div className="deck-grid">{decks.slice(0, 4).map(d => <DeckTile key={d.id} deck={d} count={cards.filter(c => c.deckId === d.id).length} onClick={() => openDeck(d.id)}/>)}</div></section>
-    <section className="garden-teaser"><div className="garden-teaser-copy"><span>MY LITTLE GARDEN</span><h3>배운 만큼 피어나는<br/>나만의 정원</h3><button onClick={() => go('garden')}>정원 보러 가기 <ArrowRight size={15}/></button></div><img src="/mascot.svg" alt="몽이"/></section>
     <button className="stat-shortcut" onClick={() => go('stats')}><span className="stat-icon"><BarChart3 size={21}/></span><span><strong>차곡차곡 쌓인 기억</strong><small>오늘 {completed}장 복습했어요 · 기록 확인하기</small></span><ChevronRight size={18}/></button>
   </div>;
 }
@@ -130,13 +121,13 @@ function DeckDetailPage({ deck, cards, back, onAdd, onStudy }: { deck: Deck; car
     <button className="soft-create" onClick={onAdd}><span><Plus size={20}/></span>새로운 기억 카드 만들기 <ArrowRight size={18}/></button>
   </div>;
 }
-function ReviewPage({ current, theme, progress, total, finished, empty, flipped, flip, rate, restart, onGarden }: {
+function ReviewPage({ current, theme, progress, total, finished, empty, flipped, flip, rate, restart, onCalendar }: {
   current?: StudyCard; theme?: DeckTheme; progress: number; total: number; finished: boolean; empty: boolean; flipped: boolean;
-  flip: () => void; rate: (r: Rating) => void; restart: () => void; onGarden: () => void;
+  flip: () => void; rate: (r: Rating) => void; restart: () => void; onCalendar: () => void;
 }) {
   const [choice, setChoice] = useState<string>();
-  if (finished) return <div className="page completion"><span className="page-eyebrow">TODAY'S LITTLE ACHIEVEMENT</span><div className="completion-art"><div className="completion-orb"/><span className="float-star one">✦</span><span className="float-star two">✧</span><Mascot/></div><h1>오늘의 기억 산책,<br/><em>참 잘했어요!</em></h1><p>{total}개의 기억을 다정하게 다시 만났어요.<br/>오늘의 작은 노력이 내일의 힘이 될 거예요.</p><div className="completion-reward"><Flower2 size={22}/><span>정원에 반짝임 +{total}</span><Sparkles size={18}/></div><button className="big-primary" onClick={onGarden}>기억의 정원 보러 가기 <ArrowRight size={19}/></button><button className="plain-link" onClick={restart}>남은 복습 확인하기</button></div>;
-  if (empty || !current) return <div className="page empty-review"><span className="page-eyebrow">ALL CLEAR TODAY ✦</span><div className="completion-art smaller"><Mascot/></div><h1>오늘은 기억들이<br/><em>편히 쉬는 날이에요.</em></h1><p>예정된 복습이 없어요.<br/>새로운 카드를 만들어 기억을 심어보세요.</p><button className="big-primary" onClick={onGarden}>나의 정원 구경하기 <ArrowRight size={19}/></button></div>;
+  if (finished) return <div className="page completion"><span className="page-eyebrow">TODAY'S LITTLE ACHIEVEMENT</span><div className="completion-art"><div className="completion-orb"/><span className="float-star one">✦</span><span className="float-star two">✧</span><Mascot/></div><h1>오늘의 기억 산책,<br/><em>참 잘했어요!</em></h1><p>{total}개의 기억을 다정하게 다시 만났어요.<br/>오늘의 작은 노력이 내일의 힘이 될 거예요.</p><div className="completion-reward"><Flower2 size={22}/><span>복습 기록 +{total}</span><Sparkles size={18}/></div><button className="big-primary" onClick={onCalendar}>학습 캘린더 보기 <ArrowRight size={19}/></button><button className="plain-link" onClick={restart}>남은 복습 확인하기</button></div>;
+  if (empty || !current) return <div className="page empty-review"><span className="page-eyebrow">ALL CLEAR TODAY ✦</span><div className="completion-art smaller"><Mascot/></div><h1>오늘은 기억들이<br/><em>편히 쉬는 날이에요.</em></h1><p>예정된 복습이 없어요.<br/>새로운 카드를 만들어 기억을 심어보세요.</p><button className="big-primary" onClick={onCalendar}>학습 캘린더 보기 <ArrowRight size={19}/></button></div>;
   return <div className="page review-page"><div className="review-top"><div><span className="page-eyebrow">A MOMENT TO REMEMBER</span><h1>기억 산책 중 ☁️</h1></div><span className="review-index">{progress + 1} <small>/ {total}</small></span></div><div className="progress-track"><div style={{ width: `${((progress + 1) / total) * 100}%` }}/></div><p className="review-instruction">{current.choices ? '보기에서 정답을 골라 보세요.' : '마음속으로 답을 떠올린 뒤 카드를 뒤집어 보세요.'}</p>
     <button className={`flashcard ${theme ?? ''} ${flipped ? 'flipped' : ''}`} onClick={flip} aria-label={flipped ? '질문 다시 보기' : '정답 확인하기'}><span className="flashcard-top"><span>{flipped ? 'THE ANSWER' : cardFields[current.kind ?? 'basic'].label}</span><Star/></span><div className="flashcard-content"><span className="flashcard-emoji">{flipped ? '✦' : '☁'}</span><h2>{flipped ? current.back : current.front}</h2></div><span className="flashcard-bottom">{flipped ? '카드를 눌러 질문 다시 보기' : '카드를 톡 누르면 정답이 보여요'} <RotateCcw size={15}/></span></button>
     {current.choices && <div className="review-options" aria-label="보기">{current.choices.map(option =>
@@ -146,9 +137,55 @@ function ReviewPage({ current, theme, progress, total, finished, empty, flipped,
     {!flipped ? <button className="big-primary reveal-btn" onClick={flip}>정답 확인하기 <ArrowRight size={19}/></button> : <div className="rating-section"><p>이 기억이 얼마나 선명했나요?</p><div className="rating-grid">{(['again','hard','good','easy'] as Rating[]).map(r => <button className={`rating rating-${r}`} key={r} onClick={() => rate(r)}><span>{ratingLabels[r]}</span><small>{r === 'again' ? '다시 만나기' : r === 'hard' ? '조금 어려워요' : r === 'good' ? '기억했어요' : '또렷해요'}</small></button>)}</div></div>}
     <p className="review-footnote">틀려도 괜찮아요. 기억은 여러 번 만나며 자라니까요. ♡</p></div>;
 }
-function GardenPage({ totalReviews, todayReviews }: { totalReviews: number; todayReviews: number }) {
-  const stage = Math.min(5, Math.max(1, Math.floor(totalReviews / 8) + 1));
-  return <div className="page garden-page"><div className="page-eyebrow">WELCOME TO YOUR MEMORY GARDEN</div><div className="page-heading"><div><h1>기억의 정원 ✿</h1><p>느리게 피어나도 괜찮아요.</p></div><span className="title-doodle">✧</span></div><div className="garden-scene"><GardenArt large/><div className="scene-title"><span>MY LITTLE GARDEN</span><strong>오늘도 작은 기억이<br/>한 송이 피었어요.</strong></div><Mascot className="scene-mascot"/></div><div className="garden-message"><div className="message-icon">✿</div><div><strong>꾸준히 자라나는 중이에요</strong><p>공부한 모든 순간이 이 정원의 햇살이 돼요.</p></div></div><SectionHeading title="나의 기억 씨앗"/><div className="stage-grid">{[1,2,3,4,5].map(s => <div className={`stage ${s <= stage ? 'unlocked' : ''}`} key={s}><span>{s <= stage ? '✿' : '✧'}</span><small>{s}단계</small></div>)}</div><div className="garden-summary"><div><span>지금까지 만난 기억</span><strong>{totalReviews}<small>번</small></strong></div><span className="garden-divider"/><div><span>오늘의 정원 햇살</span><strong>{todayReviews}<small>번</small></strong></div></div><p className="garden-whisper">“한 번에 활짝 피지 않아도 돼요. 조금씩, 오래.”</p></div>;
+function CalendarCloud({ className }: { className: string }) {
+  return <svg className={className} viewBox="0 0 48 34" fill="none" aria-hidden="true">
+    <path d="M12 31C6 31 2 27 2 22s4-9 9-10C13 6 17 3 23 3c5 0 9 2 12 7 6 0 11 4 11 10s-5 11-11 11H12Z" fill="currentColor"/>
+  </svg>;
+}
+
+function CalendarPage({ logs }: { logs: ReviewLog[] }) {
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const currentDay = today();
+  const monthLabel = `${year}년 ${monthIndex + 1}월`;
+  const counts = new Map<string, number>();
+  for (const log of logs) {
+    const date = new Date(log.date);
+    if (date.getFullYear() !== year || date.getMonth() !== monthIndex) continue;
+    const day = localDay(date);
+    counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+  const days = Array.from({ length: new Date(year, monthIndex + 1, 0).getDate() }, (_, index) => index + 1);
+  const moveMonth = (offset: number) => setMonth(new Date(year, monthIndex + offset, 1));
+  return <div className="page">
+    <div className="page-heading"><div><h1>학습 캘린더</h1><p>복습한 날을 한눈에 확인해요.</p></div><CalendarCloud className="calendar-heading-cloud"/></div>
+    <section className="monthly-calendar" aria-label="월별 학습 기록">
+      <div className="month-heading">
+        <button type="button" onClick={() => moveMonth(-1)} aria-label="이전 달"><ArrowLeft size={18}/></button>
+        <h2 aria-live="polite">{monthLabel}</h2>
+        <button type="button" onClick={() => moveMonth(1)} disabled={localDay(month).slice(0, 7) >= currentDay.slice(0, 7)} aria-label="다음 달"><ArrowRight size={18}/></button>
+      </div>
+      <div className="month-grid">
+        {['일', '월', '화', '수', '목', '금', '토'].map(day => <span className="month-weekday" key={day}>{day}</span>)}
+        {days.map(day => {
+          const date = localDay(new Date(year, monthIndex, day));
+          const count = counts.get(date) ?? 0;
+          return <div key={day} className="month-day" style={day === 1 ? { gridColumnStart: month.getDay() + 1 } : undefined} aria-current={date === currentDay ? 'date' : undefined}>
+            {count > 0 && <CalendarCloud className="month-cloud"/>}
+            <time dateTime={date} aria-label={`${monthLabel} ${day}일, ${count ? `복습 ${count}회` : '복습 기록 없음'}`}>{day}</time>
+          </div>;
+        })}
+      </div>
+      <div className="month-footer">
+        <p className="month-summary" aria-live="polite">{counts.size ? `이 달에 ${counts.size}일 복습했어요.` : '이 달의 복습 기록이 없어요.'}</p>
+        <span className="month-legend"><CalendarCloud className="month-legend-cloud"/> 복습한 날</span>
+      </div>
+    </section>
+  </div>;
 }
 function StatsPage({ logs, cards, back }: { logs: ReviewLog[]; cards: StudyCard[]; back: () => void }) {
   const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate()-(6-i)); return { d: ['일','월','화','수','목','금','토'][d.getDay()], n: logs.filter(l => localDay(l.date) === localDay(d)).length }; });
@@ -290,7 +327,7 @@ export default function App() {
   const [page, setPage] = useState<Page>('home');
   const [decks, setDecks] = useStoredState<Deck[]>('recall-decks-v1', initialDecks);
   const [cards, setCards] = useStoredState<StudyCard[]>('recall-cards-v1', initialCards);
-  const [logs, setLogs] = useStoredState<ReviewLog[]>('recall-logs-v1', seedLogs);
+  const [logs, setLogs] = useStoredState<ReviewLog[]>('recall-logs-v1', []);
   const [openDeckId, setOpenDeckId] = useState('english');
   const [modal, setModal] = useState<'deck'|'card'|null>(null);
   const [queue, setQueue] = useState<string[]>([]);
@@ -298,7 +335,8 @@ export default function App() {
   const [flipped, setFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
   const [notice,setNotice] = useState('');
-  const todayReviews = logs.filter(l => localDay(l.date) === today()).length;
+  const studyLogs = useMemo(() => logs.filter(log => log.cardId !== 'seed' || !log.id.startsWith('seed-')), [logs]);
+  const todayReviews = studyLogs.filter(l => localDay(l.date) === today()).length;
   const selectedDeck = decks.find(d=>d.id===openDeckId) || decks[0];
   const selectedCards = cards.filter(c=>c.deckId===selectedDeck?.id);
   const current = useMemo(()=>cards.find(c=>c.id===queue[index]),[cards,queue,index]);
@@ -334,15 +372,15 @@ export default function App() {
   useEffect(()=>{if(!notice) return; const timer=window.setTimeout(()=>setNotice(''),2800); return()=>window.clearTimeout(timer);},[notice]);
   return <div className="site-background" data-theme={theme}><div className="desktop-decoration"><div className="desktop-cloud">☁</div><div className="desktop-copy"><span>YOUR LITTLE MEMORY GARDEN</span><h2>작은 기억이<br/><em>꽃이 되는 곳.</em></h2><p>그날의 배움이 잊히지 않도록,<br/>오늘도 다정하게 다시 만나봐요.</p><div className="desktop-stars">✳ &nbsp; ✧ &nbsp; ✳</div></div></div>
     <main className="phone-shell"><AppHeader onStats={()=>navigate('stats')} reviewsToday={todayReviews} dark={dark} toggleTheme={() => setTheme(dark ? 'light' : 'dark')}/><div className="app-scroll" key={page}>
-      {page==='home'&&<HomePage decks={decks} cards={cards} logs={logs} openDeck={openDeck} go={navigate} startReview={startReview}/>}
+      {page==='home'&&<HomePage decks={decks} cards={cards} logs={studyLogs} openDeck={openDeck} go={navigate} startReview={startReview}/>}
       {page==='decks'&&<DecksPage decks={decks} cards={cards} onOpen={openDeck} onCreate={()=>setModal('deck')}/>}
       {page==='deck-detail'&&selectedDeck&&<DeckDetailPage deck={selectedDeck} cards={selectedCards} back={()=>navigate('decks')} onAdd={()=>setModal('card')} onStudy={()=>startReview(selectedDeck.id)}/>}
-      {page==='review'&&<ReviewPage key={current?.id} current={current} theme={decks.find(deck => deck.id === current?.deckId)?.theme} progress={index} total={queue.length} finished={finished} empty={queue.length===0} flipped={flipped} flip={()=>setFlipped(v=>!v)} rate={rate} restart={()=>startReview()} onGarden={()=>navigate('garden')}/>}
-      {page==='garden'&&<GardenPage totalReviews={logs.length} todayReviews={todayReviews}/>}
-      {page==='stats'&&<StatsPage cards={cards} logs={logs} back={()=>navigate('home')}/>}
+      {page==='review'&&<ReviewPage key={current?.id} current={current} theme={decks.find(deck => deck.id === current?.deckId)?.theme} progress={index} total={queue.length} finished={finished} empty={queue.length===0} flipped={flipped} flip={()=>setFlipped(v=>!v)} rate={rate} restart={()=>startReview()} onCalendar={()=>navigate('garden')}/>}
+      {page==='garden'&&<CalendarPage logs={studyLogs}/>}
+      {page==='stats'&&<StatsPage cards={cards} logs={studyLogs} back={()=>navigate('home')}/>}
     </div><BottomNav page={page} onNavigate={navigate}/></main>
     <div className="desktop-footer">REMORY <span>✦</span> DREAMY PASTEL EXPERIENCE · FRONTEND PROTOTYPE</div>
-    <button className="floating-add" onClick={()=>setModal('card')} aria-label="새 카드 추가"><Plus size={23}/></button>
+    {page !== 'garden' && <button className="floating-add" onClick={()=>setModal('card')} aria-label="새 카드 추가"><Plus size={23}/></button>}
     {modal==='deck'&&<CreateDeckModal onClose={()=>setModal(null)} onCreate={addDeck}/>}
     {modal==='card'&&<CreateCardModal decks={decks} defaultDeckId={page==='deck-detail'?openDeckId:undefined} onClose={()=>setModal(null)} onCreate={addCards}/>}
     {notice&&<div className="toast" role="status"><Sparkles size={17}/>{notice}</div>}

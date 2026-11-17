@@ -305,3 +305,71 @@ button { border: 0; }
 [data-theme="dark"] :is(.deck-count-line strong, .deck-count-line > span:last-child, .search-field input::placeholder) {
   color: var(--muted);
 }
+
+.calendar-heading-cloud {
+  width: 46px;
+  height: 34px;
+  flex: none;
+  color: #e7d6f5;
+}
+.monthly-calendar {
+  --calendar-cloud: #ebdcf8;
+  --calendar-guide: #746581;
+  --calendar-divider: #eee4f2;
+  --calendar-today: #8e68ac;
+  padding: 16px;
+  border: 1px solid #e9def0;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #fdf7ff, #fffdfd 34%);
+}
+.month-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.month-heading h2 { margin: 0; font-size: 17px; }
+.month-heading button { display: grid; place-items: center; min-width: 40px; min-height: 40px; border-radius: 12px; color: #6e5188; background: #f2e8fa; }
+.month-heading button:disabled { opacity: .4; cursor: default; }
+.month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; text-align: center; }
+.month-weekday { padding: 6px 0; color: var(--calendar-guide); font-size: 12px; }
+.month-day {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.month-cloud {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: 44px;
+  height: 34px;
+  margin: auto;
+  color: var(--calendar-cloud);
+  z-index: -1;
+}
+.month-day[aria-current="date"] { box-shadow: inset 0 0 0 1.5px var(--calendar-today); }
+.month-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--calendar-divider);
+}
+.month-footer .month-summary, .month-legend { margin: 0; color: var(--calendar-guide); font-size: 12px; }
+.month-legend { display: inline-flex; align-items: center; gap: 5px; }
+.month-legend-cloud { width: 20px; height: 15px; color: var(--calendar-cloud); }
+[data-theme="dark"] .calendar-heading-cloud { color: #bda0de; }
+[data-theme="dark"] .monthly-calendar {
+  --calendar-cloud: #614b79;
+  --calendar-guide: #d4c3df;
+  --calendar-divider: var(--night-border);
+  --calendar-today: #cca5ee;
+  background: linear-gradient(160deg, #372a46, var(--night-panel) 34%);
+  border-color: var(--night-border);
+}
+[data-theme="dark"] .month-heading button { background: #514069; color: #f4e4ff; }
