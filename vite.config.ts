@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['mascot.svg', 'garden.svg', 'icon.svg'],
+      includeAssets: ['mascot.svg', 'garden.svg', 'icon.svg', 'templates/*.xlsx'],
       manifest: {
         name: 'Remory — 기억이 피어나는 곳',
         short_name: 'Remory',

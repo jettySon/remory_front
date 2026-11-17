@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ArrowLeft, ArrowRight, BarChart3, BookHeart, BookOpen, CalendarDays,
-  Check, ChevronRight, Cloud, Code2, Flower2,
+  Check, ChevronRight, Cloud, Code2, Download, Flower2,
   Heart, Home, Languages, Landmark, LibraryBig, Moon, Plus, Sun,
   RotateCcw, Search, Sparkles, X
 } from 'lucide-react';
+import SelectField from './SelectField';
+import type { CellValue, Sheet } from 'read-excel-file/browser';
 
 type Page = 'home' | 'decks' | 'review' | 'garden' | 'stats' | 'deck-detail';
 type Rating = 'again' | 'hard' | 'good' | 'easy';
@@ -212,16 +214,30 @@ type CardKind = keyof typeof cardFields;
 type CardDraft = Pick<StudyCard, 'front' | 'back' | 'kind' | 'choices'>;
 const themeLabels = { lavender: '라벤더', peach: '복숭아', butter: '버터 옐로', blue: '하늘색' };
 
-function makeDraft(kind: CardKind, values: string[]): CardDraft | null {
+type BulkRow = { line: number; values: string[] };
+
+function readCellText(cell: CellValue | null): string {
+  if (cell instanceof Date) return cell.toISOString().replace(/T00:00:00\.000Z$/, '');
+  return cell == null ? '' : String(cell).trim();
+}
+
+function validateDraft(kind: CardKind, values: string[]): string | undefined {
+  if (values.length !== cardFields[kind].fields.length || values.some(value => !value.trim())) {
+    return '열 수와 빈 칸을 확인해 주세요.';
+  }
+  if (kind === 'cloze' && values[0].split('___').length !== 2) return '문장에 ___를 한 번 넣어 주세요.';
+  if (kind === 'choice' && new Set(values.slice(1).map(value => value.trim())).size !== 3) {
+    return '정답과 오답은 서로 달라야 해요.';
+  }
+}
+
+function makeDraft(kind: CardKind, values: string[]): CardDraft {
   const [front, back, third, fourth] = values.map(value => value.trim());
-  if (values.length !== cardFields[kind].fields.length || values.some(value => !value.trim())) return null;
   if (kind === 'word') return { kind, front, back: back + '\n\n' + third };
   if (kind === 'cloze') {
-    if (front.split('___').length !== 2) return null;
     return { kind, front, back: front.replace('___', () => back) };
   }
   if (kind === 'choice') {
-    if (new Set([back, third, fourth]).size !== 3) return null;
     const choices = [back, third, fourth];
     const position = Math.floor(Math.random() * choices.length);
     [choices[0], choices[position]] = [choices[position], choices[0]];
@@ -242,11 +258,11 @@ function CreateDeckModal({ onClose, onCreate }: { onClose: () => void; onCreate:
     }}>
       <label>학습 덱 이름<input autoFocus required maxLength={35} value={title} onChange={e => setTitle(e.target.value)}/></label>
       <label>짧은 소개<input maxLength={70} value={subtitle} onChange={e => setSubtitle(e.target.value)}/></label>
-      <label>덱 유형<select value={kind.icon} onChange={e => {
-        const next = deckKinds.find(item => item.icon === e.target.value) ?? deckKinds[3];
+      <SelectField label="덱 유형" value={kind.icon} options={deckKinds.map(item => ({ value: item.icon, label: item.label }))} onChange={icon => {
+        const next = deckKinds.find(item => item.icon === icon) ?? deckKinds[3];
         setKind(next);
         setTheme(next.theme);
-      }}>{deckKinds.map(item => <option key={item.icon} value={item.icon}>{item.label}</option>)}</select></label>
+      }}/>
       <span className="form-label">공부방 색상</span>
       <div className="color-choices">{(Object.keys(themeLabels) as DeckTheme[]).map(color =>
         <button key={color} type="button" aria-label={themeLabels[color]} aria-pressed={theme === color} className={`color-choice ${color} ${theme === color ? 'picked' : ''}`} onClick={() => setTheme(color)}>{theme === color && <Check size={22}/>}</button>
@@ -265,44 +281,155 @@ function CreateCardModal({ decks, defaultDeckId, onClose, onCreate }: { decks: D
   const [values, setValues] = useState<string[]>([]);
   const [bulk, setBulk] = useState(false);
   const [input, setInput] = useState('');
+  const [source, setSource] = useState<'paste' | 'excel'>('paste');
+  const [workbook, setWorkbook] = useState<Sheet[]>([]);
+  const [sheetName, setSheetName] = useState('');
+  const [headerOverride, setHeaderOverride] = useState<boolean | null>(null);
+  const [reading, setReading] = useState(false);
+  const [fileError, setFileError] = useState('');
+  const [fileName, setFileName] = useState('');
+  const readRequest = useRef(0);
   const [error, setError] = useState('');
   const fields = cardFields[kind].fields;
-  const rows = input.split(/\r?\n/).flatMap((line, index) => line.trim() ? [{ line: index + 1, values: line.split('\t') }] : []);
+  const excel = source === 'excel';
+  const sheet = workbook.find(item => item.sheet === sheetName);
+  const firstRow = sheet?.data[0];
+  const hasMatchingHeader = firstRow !== undefined &&
+    fields.every((field, index) => readCellText(firstRow[index] ?? null) === field) &&
+    firstRow.slice(fields.length).every(cell => !readCellText(cell));
+  const skipHeader = headerOverride ?? hasMatchingHeader;
+  const excelRows = useMemo(() => {
+    const rows: BulkRow[] = [];
+    sheet?.data.forEach((cells, index) => {
+      if (skipHeader && index === 0) return;
+      const values = cells.map(readCellText);
+      while (values.length && !values[values.length - 1]) values.pop();
+      if (values.length) rows.push({ line: index + 1, values });
+    });
+    return rows;
+  }, [sheet, skipHeader]);
+  const rows = excel ? excelRows : input.split(/\r?\n/).flatMap((line, index) =>
+    line.trim() ? [{ line: index + 1, values: line.split('\t') }] : []
+  );
+  const excelRowError = useMemo(() => {
+    for (const row of excelRows) {
+      const issue = validateDraft(kind, row.values);
+      if (issue) return `${row.line}행 · ${issue}`;
+    }
+    return '';
+  }, [excelRows, kind]);
   const preview = values.some(value => value?.trim());
+
+  async function loadWorkbook(file?: File) {
+    const request = ++readRequest.current;
+    setWorkbook([]);
+    setSheetName('');
+    setFileError('');
+    setFileName(file?.name ?? '');
+    setHeaderOverride(null);
+    if (!file || !/\.xlsx$/i.test(file.name)) {
+      setReading(false);
+      if (file) setFileError('.xlsx 형식의 엑셀 파일을 선택해 주세요.');
+      return;
+    }
+
+    setReading(true);
+    try {
+      const { default: readXlsxFile } = await import('read-excel-file/browser');
+      const sheets = await readXlsxFile(file);
+      if (request !== readRequest.current) return;
+      setWorkbook(sheets);
+      setSheetName(sheets[0]?.sheet ?? '');
+      if (!sheets.length) setFileError('파일에 읽을 수 있는 시트가 없어요.');
+    } catch {
+      if (request === readRequest.current) setFileError('엑셀 파일을 읽지 못했어요. 파일이 열리는지 확인한 뒤 다시 선택해 주세요.');
+    } finally {
+      if (request === readRequest.current) setReading(false);
+    }
+  }
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!deck) return;
+    if (!deck || (bulk && excel && (reading || fileError || excelRowError))) return;
     const entries = bulk ? rows : [{ line: 1, values: fields.map((_, index) => values[index] ?? '') }];
-    const drafts: CardDraft[] = [];
     for (const entry of entries) {
-      const draft = makeDraft(kind, entry.values);
-      if (!draft) {
-        const detail = kind === 'cloze' ? ' 문장에 ___를 한 번 넣어 주세요.' : kind === 'choice' ? ' 정답과 오답은 서로 달라야 해요.' : '';
-        setError((bulk ? entry.line + '번째 줄의 열 수와 내용을 확인해 주세요.' : '입력 내용을 확인해 주세요.') + detail);
+      const issue = validateDraft(kind, entry.values);
+      if (issue) {
+        setError(bulk ? `${entry.line}번째 줄 · ${issue}` : issue.replace('열 수와 빈 칸', '입력 내용'));
         return;
       }
-      drafts.push(draft);
     }
-    if (drafts.length) onCreate(deck.id, drafts);
+    if (entries.length) onCreate(deck.id, entries.map(entry => makeDraft(kind, entry.values)));
   };
   return <Modal title="새로운 기억 심기 ✦" onClose={onClose}>
     <form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
-      <label>학습 덱<select value={deckId} onChange={e => {
-        setDeckId(e.target.value);
-        if (!preview && !input.trim()) setKind(defaultKind(decks.find(item => item.id === e.target.value)));
-      }}>{decks.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <SelectField label="학습 덱" value={deckId} options={decks.map(item => ({ value: item.id, label: item.title }))} onChange={id => {
+        setDeckId(id);
+        setError('');
+        if (!preview && !input.trim()) setKind(defaultKind(decks.find(item => item.id === id)));
+      }}/>
       <div className="entry-modes">
         <button type="button" aria-pressed={!bulk} onClick={() => { setBulk(false); setError(''); }}>직접 만들기</button>
         <button type="button" aria-pressed={bulk} onClick={() => { setBulk(true); setError(''); }}>일괄 등록</button>
       </div>
-      <label>카드 유형<select value={kind} onChange={e => { setKind(e.target.value as CardKind); setError(''); }}>
-        {(Object.keys(cardFields) as CardKind[]).map(type => <option key={type} value={type}>{cardFields[type].label}</option>)}
-      </select></label>
-      {bulk ? <label>스프레드시트에서 붙여넣기
-        <small>제목 행을 빼고 복사해 주세요. 한 줄에 카드 한 장, 열 사이는 탭으로 구분해요.</small>
-        <small>열 순서 · {fields.join(' → ')}</small>
-        <textarea required rows={6} value={input} onChange={e => setInput(e.target.value)}/>
-      </label> : fields.map((field, index) => <label key={field}>{field}
+      <SelectField
+        label="카드 유형"
+        value={kind}
+        options={(Object.keys(cardFields) as CardKind[]).map(type => ({ value: type, label: cardFields[type].label }))}
+        onChange={type => { setKind(type); setError(''); }}
+      />
+      {bulk ? <div className="bulk-field">
+        <div className="entry-modes bulk-sources" role="group" aria-label="가져오기 방식">
+          <button type="button" aria-pressed={!excel} onClick={() => { setSource('paste'); setError(''); }}>붙여넣기</button>
+          <button type="button" aria-pressed={excel} onClick={() => { setSource('excel'); setError(''); }}>엑셀 파일</button>
+        </div>
+        {excel ? <>
+          <div className="workbook-template">
+            <a href={`./templates/${kind}.xlsx`} download={`리모리-${cardFields[kind].label}-양식.xlsx`}>
+              <Download size={16} aria-hidden="true"/> {cardFields[kind].label} 양식 다운로드
+            </a>
+            <span className="field-hint">첫 행의 열 제목은 그대로 두고, 아래 예시를 내 카드로 바꿔 주세요.</span>
+          </div>
+          <label htmlFor="bulk-workbook">엑셀 파일 선택</label>
+          <div id="bulk-workbook-hint" className="field-hint">
+            <span>.xlsx 파일의 첫 번째 열부터 카드 내용을 입력해 주세요.</span>
+            <span><strong>열 순서</strong> {fields.join(' → ')}</span>
+          </div>
+          <div className="workbook-picker">
+            <input
+              id="bulk-workbook"
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              aria-describedby="bulk-workbook-hint workbook-name"
+              onClick={e => { e.currentTarget.value = ''; }}
+              onChange={e => { if (e.target.files?.[0]) void loadWorkbook(e.target.files[0]); }}
+            />
+            <span className="workbook-picker-action" aria-hidden="true">{fileName ? '파일 변경' : '파일 찾아보기'}</span>
+            <span id="workbook-name" className="workbook-name">{fileName || '선택한 파일 없음'}</span>
+          </div>
+          {workbook.length > 1 && <SelectField
+            label="가져올 시트"
+            value={sheetName}
+            options={workbook.map(item => ({ value: item.sheet, label: item.sheet }))}
+            onChange={name => { setSheetName(name); setHeaderOverride(null); }}
+          />}
+          {sheet && <label className="workbook-header">
+            <input type="checkbox" checked={skipHeader} onChange={e => setHeaderOverride(e.target.checked)}/>
+            첫 행은 열 제목이에요
+          </label>}
+          {(fileError || excelRowError) && <p className="form-error workbook-feedback" role="alert">{fileError || excelRowError}</p>}
+          <div className="field-hint" role="status">
+            {reading ? '엑셀 파일을 읽는 중이에요.' : sheet && !excelRowError && (excelRows.length ? `등록할 카드 ${excelRows.length}장` : '이 시트에서 가져올 행이 없어요.')}
+          </div>
+        </> : <>
+          <label htmlFor="bulk-cards">스프레드시트에서 붙여넣기</label>
+          <div id="bulk-cards-hint" className="field-hint">
+            <span>제목 행을 빼고 복사해 주세요. 한 줄에 카드 한 장, 열 사이는 탭으로 구분해요.</span>
+            <span><strong>열 순서</strong> {fields.join(' → ')}</span>
+          </div>
+          <textarea id="bulk-cards" aria-describedby="bulk-cards-hint" required rows={5} value={input} onChange={e => setInput(e.target.value)}/>
+        </>}
+      </div> : fields.map((field, index) => <label key={field}>{field}
         <textarea required rows={index === 0 ? 2 : 1} value={values[index] ?? ''} onChange={e => {
           const next = [...values];
           next[index] = e.target.value;
@@ -316,7 +443,7 @@ function CreateCardModal({ decks, defaultDeckId, onClose, onCreate }: { decks: D
         {kind === 'word' && <p>{values[2]}</p>}
       </div>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="big-primary form-submit" disabled={!deck || (bulk && !rows.length)}>{bulk ? `${rows.length}장 등록하기` : '기억 카드 저장하기'} <ArrowRight size={18}/></button>
+      <button className="big-primary form-submit" disabled={!deck || (bulk && (!rows.length || (excel && Boolean(reading || fileError || excelRowError))))}>{bulk ? `${excel && excelRowError ? 0 : rows.length}장 등록하기` : '기억 카드 저장하기'} <ArrowRight size={18}/></button>
     </form>
   </Modal>;
 }
