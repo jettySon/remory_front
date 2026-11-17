@@ -543,3 +543,89 @@ button { border: 0; }
   outline: 2px solid var(--field-focus);
   outline-offset: 3px;
 }
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  background: #ece1f7;
+  color: #60477d;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.account-trigger svg { flex: none; }
+@media (max-width: 415px) {
+  .header-streak span { display: none; }
+}
+[data-theme="dark"] .account-trigger { background: #453357; color: #f1ddff; }
+
+.account-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 70px;
+  margin-bottom: 15px;
+  padding: 4px 8px 4px 14px;
+  border-radius: 16px;
+  background: linear-gradient(130deg, #f4e8fa, #f9edf3);
+}
+.account-intro p { margin: 0; color: #695876; font-size: 12px; line-height: 1.65; }
+.account-intro strong { color: #5c4276; font-size: 13px; }
+.account-mascot { width: 74px; height: 63px; flex: none; }
+.account-modes { margin-bottom: 17px; }
+.account-modes button { font-size: 13px; font-weight: 700; }
+.account-password { display: grid; gap: 8px; }
+.password-control { position: relative; }
+.sheet-form .password-control input { padding-inline-end: 50px; }
+.password-control button {
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-end: 4px;
+  width: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--field-accent);
+}
+.account-feedback {
+  margin: -8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--field-highlight);
+  color: var(--field-ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+[data-theme="dark"] .account-intro { background: linear-gradient(130deg, #392b48, #403043); }
+
+.account-reset-guide {
+  margin: 0 0 16px;
+  color: #695876;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.account-help-link {
+  min-height: 40px;
+  padding: 8px 0;
+  color: #72528e;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  background: transparent;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-theme="dark"] .account-help-link { color: var(--accent); }

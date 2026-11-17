@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ArrowLeft, ArrowRight, BarChart3, BookHeart, BookOpen, CalendarDays,
-  Check, ChevronRight, Cloud, Code2, Download, Flower2,
+  Check, ChevronRight, Cloud, Code2, Download, Eye, EyeOff, Flower2,
   Heart, Home, Languages, Landmark, LibraryBig, Moon, Plus, Sun,
-  RotateCcw, Search, Sparkles, X
+  RotateCcw, Search, Sparkles, UserRound, X
 } from 'lucide-react';
 import SelectField from './SelectField';
 import type { CellValue, Sheet } from 'read-excel-file/browser';
@@ -67,8 +67,11 @@ function WeekRow({ logs }: { logs: ReviewLog[] }) {
 function Mascot({ className = '' }: { className?: string }) {
   return <img src="/mascot.svg" className={`mascot ${className}`} alt="볼이 발그레한 하얀 구름 캐릭터 몽이" draggable={false} />;
 }
-function AppHeader({ onStats, reviewsToday, dark, toggleTheme }: { onStats: () => void; reviewsToday: number; dark: boolean; toggleTheme: () => void }) {
-  return <header className="app-header"><div className="brand"><span className="brand-cloud"><Cloud size={21} strokeWidth={2.2}/></span><span>remory<span className="brand-dot">.</span></span></div><div className="header-actions"><button className="theme-toggle" type="button" aria-label="다크 모드" aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="header-streak" onClick={onStats} aria-label="나의 학습 기록 보기"><Flower2 size={15}/><span>{reviewsToday ? '오늘도 반짝이는 중' : '작은 발자국 모으기'}</span><ChevronRight size={14}/></button></div></header>;
+function AppHeader({ onStats, reviewsToday, dark, toggleTheme, onAccount }: {
+  onStats: () => void; reviewsToday: number; dark: boolean; toggleTheme: () => void;
+  onAccount: (trigger: HTMLButtonElement) => void;
+}) {
+  return <header className="app-header"><div className="brand"><span className="brand-cloud"><Cloud size={21} strokeWidth={2.2}/></span><span>remory<span className="brand-dot">.</span></span></div><div className="header-actions"><button className="theme-toggle" type="button" aria-label="다크 모드" aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="header-streak" onClick={onStats} aria-label="나의 학습 기록 보기"><Flower2 size={15}/><span>{reviewsToday ? '오늘도 반짝이는 중' : '작은 발자국 모으기'}</span><ChevronRight size={14}/></button><button className="account-trigger" type="button" aria-haspopup="dialog" onClick={e => onAccount(e.currentTarget)}><UserRound size={16} aria-hidden="true"/>로그인</button></div></header>;
 }
 function BottomNav({ page, onNavigate }: { page: Page; onNavigate: (next: Page) => void }) {
   const tabs = [
@@ -198,6 +201,65 @@ function Modal({ title, children, onClose }: { title: string; children: ReactNod
   useEffect(() => { const cb = (e: KeyboardEvent) => { if(e.key === 'Escape') onClose(); }; window.addEventListener('keydown', cb); return () => window.removeEventListener('keydown', cb); }, [onClose]);
   return <div className="modal-backdrop" onMouseDown={e=>{if(e.target === e.currentTarget) onClose();}}><div className="modal-sheet" role="dialog" aria-modal="true" aria-label={title}><div className="sheet-handle"/><div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={21}/></button></div>{children}</div></div>;
 }
+function AccountModal({ onClose }: { onClose: () => void }) {
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
+  const [email, setEmail] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const isSignup = mode === 'signup';
+  const isReset = mode === 'reset';
+  const action = isReset ? '재설정 링크 받기' : isSignup ? '회원가입' : '로그인';
+
+  function changeMode(next: typeof mode) {
+    if (mode === next) return;
+    setMode(next);
+    setShowPassword(false);
+    setSubmitted(false);
+  }
+
+  return <Modal title={isReset ? '비밀번호 재설정' : '리모리 계정'} onClose={onClose}>
+    <div className="account-intro">
+      <p><strong>계정 화면 미리보기</strong><br/>입력한 내용은 전송하거나 저장하지 않아요.</p>
+      <Mascot className="account-mascot"/>
+    </div>
+    {isReset ? <p className="account-reset-guide">가입할 때 사용한 이메일을 입력해 주세요.</p> : <div className="entry-modes account-modes" role="group" aria-label="계정 메뉴">
+      <button type="button" aria-pressed={!isSignup} onClick={() => changeMode('login')}>로그인</button>
+      <button type="button" aria-pressed={isSignup} onClick={() => changeMode('signup')}>회원가입</button>
+    </div>}
+    <form key={mode} className="sheet-form" onInput={() => setSubmitted(false)} onSubmit={event => {
+      event.preventDefault();
+      setSubmitted(true);
+    }}>
+      <label>이메일
+        <input type="email" name="email" autoComplete="email" autoCapitalize="none" autoFocus required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com"/>
+      </label>
+      {!isReset && <div className="account-password">
+        <label htmlFor="account-password">비밀번호</label>
+        <div className="password-control">
+          <input
+            id="account-password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete={isSignup ? 'new-password' : 'current-password'}
+            minLength={isSignup ? 8 : undefined}
+            aria-describedby={isSignup ? 'account-password-hint' : undefined}
+            required
+          />
+          <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'} aria-controls="account-password">
+            {showPassword ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}
+          </button>
+        </div>
+        {isSignup && <span className="field-hint" id="account-password-hint">비밀번호는 8자 이상 입력해 주세요.</span>}
+      </div>}
+      <button type="submit" className="big-primary form-submit">{action} <ArrowRight size={18} aria-hidden="true"/></button>
+      {submitted && <p className="account-feedback" role="status">{isReset ? '미리보기에서는 재설정 이메일을 보내지 않아요.' : `실제 ${action}은 계정 서버 연결 후 이용할 수 있어요.`}</p>}
+    </form>
+    {isReset ? <button className="account-help-link" type="button" onClick={() => changeMode('login')}>
+      <ArrowLeft size={15} aria-hidden="true"/> 로그인으로 돌아가기
+    </button> : mode === 'login' && <button className="account-help-link" type="button" onClick={() => changeMode('reset')}>비밀번호를 잊었나요?</button>}
+  </Modal>;
+}
+
 const deckKinds = [
   { icon: 'language', label: '외국어', theme: 'peach', card: 'word' },
   { icon: 'code', label: '개발', theme: 'lavender', card: 'basic' },
@@ -456,7 +518,12 @@ export default function App() {
   const [cards, setCards] = useStoredState<StudyCard[]>('recall-cards-v1', initialCards);
   const [logs, setLogs] = useStoredState<ReviewLog[]>('recall-logs-v1', []);
   const [openDeckId, setOpenDeckId] = useState('english');
-  const [modal, setModal] = useState<'deck'|'card'|null>(null);
+  const [modal, setModal] = useState<'deck' | 'card' | 'account' | null>(null);
+  const accountTrigger = useRef<HTMLButtonElement>(null);
+  const closeAccount = () => {
+    setModal(null);
+    accountTrigger.current?.focus();
+  };
   const [queue, setQueue] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -498,7 +565,7 @@ export default function App() {
   };
   useEffect(()=>{if(!notice) return; const timer=window.setTimeout(()=>setNotice(''),2800); return()=>window.clearTimeout(timer);},[notice]);
   return <div className="site-background" data-theme={theme}><div className="desktop-decoration"><div className="desktop-cloud">☁</div><div className="desktop-copy"><span>YOUR LITTLE MEMORY GARDEN</span><h2>작은 기억이<br/><em>꽃이 되는 곳.</em></h2><p>그날의 배움이 잊히지 않도록,<br/>오늘도 다정하게 다시 만나봐요.</p><div className="desktop-stars">✳ &nbsp; ✧ &nbsp; ✳</div></div></div>
-    <main className="phone-shell"><AppHeader onStats={()=>navigate('stats')} reviewsToday={todayReviews} dark={dark} toggleTheme={() => setTheme(dark ? 'light' : 'dark')}/><div className="app-scroll" key={page}>
+    <main className="phone-shell"><AppHeader onStats={()=>navigate('stats')} reviewsToday={todayReviews} onAccount={trigger => { accountTrigger.current = trigger; setModal('account'); }} dark={dark} toggleTheme={() => setTheme(dark ? 'light' : 'dark')}/><div className="app-scroll" key={page}>
       {page==='home'&&<HomePage decks={decks} cards={cards} logs={studyLogs} openDeck={openDeck} go={navigate} startReview={startReview}/>}
       {page==='decks'&&<DecksPage decks={decks} cards={cards} onOpen={openDeck} onCreate={()=>setModal('deck')}/>}
       {page==='deck-detail'&&selectedDeck&&<DeckDetailPage deck={selectedDeck} cards={selectedCards} back={()=>navigate('decks')} onAdd={()=>setModal('card')} onStudy={()=>startReview(selectedDeck.id)}/>}
@@ -508,6 +575,7 @@ export default function App() {
     </div><BottomNav page={page} onNavigate={navigate}/></main>
     <div className="desktop-footer">REMORY <span>✦</span> DREAMY PASTEL EXPERIENCE · FRONTEND PROTOTYPE</div>
     {page !== 'garden' && <button className="floating-add" onClick={()=>setModal('card')} aria-label="새 카드 추가"><Plus size={23}/></button>}
+    {modal==='account'&&<AccountModal onClose={closeAccount}/>}
     {modal==='deck'&&<CreateDeckModal onClose={()=>setModal(null)} onCreate={addDeck}/>}
     {modal==='card'&&<CreateCardModal decks={decks} defaultDeckId={page==='deck-detail'?openDeckId:undefined} onClose={()=>setModal(null)} onCreate={addCards}/>}
     {notice&&<div className="toast" role="status"><Sparkles size={17}/>{notice}</div>}
