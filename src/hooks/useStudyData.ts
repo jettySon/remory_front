@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStoredState } from './useStoredState';
 import { initialCards, initialDecks } from '../study/seed';
-import type { CardDraft, Deck, Rating, ReviewLog, StudyCard } from '../types';
+import type { CardDraft, Deck, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -35,15 +35,16 @@ export function useStudyData() {
     setCards((previous) => [...previous, ...newCards]);
   }
 
-  function recordReview(cardId: string, rating: Rating) {
+  function recordReview(cardId: string, rating: Rating, mode: ReviewMode) {
     const now = Date.now();
     const dueAt = new Date(now + delayMs[rating]).toISOString();
-    const log = { id: uid(), cardId, rating, date: new Date(now).toISOString() };
-    setCards((previous) =>
-      previous.map((card) =>
-        card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
-      ),
-    );
+    const log = { id: uid(), cardId, rating, date: new Date(now).toISOString(), mode };
+    if (mode === 'scheduled')
+      setCards((previous) =>
+        previous.map((card) =>
+          card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
+        ),
+      );
     setLogs((previous) => [...previous, log]);
   }
 

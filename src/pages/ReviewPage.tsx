@@ -3,7 +3,7 @@ import { ArrowRight, Flower2, RotateCcw, Sparkles } from 'lucide-react';
 import { Mascot, Star } from '../components/Illustrations';
 import { cardFields } from '../study/cards';
 import { ratingLabels } from '../study/review';
-import type { DeckTheme, Rating, StudyCard } from '../types';
+import type { DeckTheme, Rating, ReviewMode, StudyCard } from '../types';
 
 export function ReviewPage({
   current,
@@ -17,6 +17,9 @@ export function ReviewPage({
   rate,
   restart,
   onCalendar,
+  mode,
+  onStats,
+  onFreeReview,
 }: {
   current?: StudyCard;
   theme?: DeckTheme;
@@ -29,8 +32,12 @@ export function ReviewPage({
   rate: (r: Rating) => void;
   restart: () => void;
   onCalendar: () => void;
+  mode: ReviewMode;
+  onStats: () => void;
+  onFreeReview: () => void;
 }) {
   const [choice, setChoice] = useState<string>();
+  const title = { scheduled: '카드 복습', focus: '집중 복습', free: '자유 복습' }[mode];
   if (finished)
     return (
       <div className="page completion">
@@ -40,7 +47,7 @@ export function ReviewPage({
           <span className="float-star two">✧</span>
           <Mascot />
         </div>
-        <h1>복습을 마쳤어요!</h1>
+        <h1>{mode === 'scheduled' ? '복습을 마쳤어요!' : `${title}을 마쳤어요!`}</h1>
         <div className="completion-reward">
           <Flower2 size={22} />
           <span>카드 {total}장 복습 완료</span>
@@ -49,9 +56,21 @@ export function ReviewPage({
         <button className="big-primary" onClick={onCalendar}>
           학습 캘린더 보기 <ArrowRight size={19} />
         </button>
-        <button className="plain-link" onClick={restart}>
-          남은 복습 확인하기
+        <button
+          className="plain-link"
+          onClick={mode === 'focus' ? onStats : mode === 'free' ? onFreeReview : restart}
+        >
+          {
+            { focus: '학습 통계로 돌아가기', free: '자유 복습할 덱 고르기', scheduled: '남은 복습 확인하기' }[
+              mode
+            ]
+          }
         </button>
+        {mode === 'scheduled' && (
+          <button className="plain-link" onClick={onFreeReview}>
+            자유 복습
+          </button>
+        )}
       </div>
     );
   if (empty || !current)
@@ -61,15 +80,18 @@ export function ReviewPage({
           <Mascot />
         </div>
         <h1>지금 복습할 카드가 없어요.</h1>
-        <button className="big-primary" onClick={onCalendar}>
-          학습 캘린더 보기 <ArrowRight size={19} />
+        <button className="big-primary" onClick={onFreeReview}>
+          자유 복습 <ArrowRight size={19} />
+        </button>
+        <button className="plain-link" onClick={onCalendar}>
+          학습 캘린더 보기
         </button>
       </div>
     );
   return (
     <div className="page review-page">
       <div className="review-top">
-        <h1>카드 복습</h1>
+        <h1>{title}</h1>
         <span className="review-index">
           {progress + 1} <small>/ {total}</small>
         </span>

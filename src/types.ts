@@ -12,7 +12,8 @@ export type StudyCard = {
   kind?: CardKind;
   choices?: string[];
 };
-export type ReviewLog = { id: string; cardId: string; rating: Rating; date: string };
+export type ReviewMode = 'scheduled' | 'focus' | 'free';
+export type ReviewLog = { id: string; cardId: string; rating: Rating; date: string; mode?: ReviewMode };
 
 export type CardKind = 'basic' | 'word' | 'cloze' | 'choice';
 export type CardDraft = Pick<StudyCard, 'front' | 'back' | 'kind' | 'choices'>;

@@ -4,6 +4,7 @@ import { AppHeader, BottomNav } from './components/Navigation';
 import { AccountModal } from './components/dialogs/AccountModal';
 import { CreateCardModal } from './components/dialogs/CreateCardModal';
 import { CreateDeckModal } from './components/dialogs/CreateDeckModal';
+import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
 import { useStudyData } from './hooks/useStudyData';
@@ -12,7 +13,7 @@ import { DeckDetailPage } from './pages/DeckDetailPage';
 import { DecksPage } from './pages/DecksPage';
 import { HomePage } from './pages/HomePage';
 import { ReviewPage } from './pages/ReviewPage';
-import { StatsPage } from './pages/StatsPage';
+import { StatsPage, type StatsFilters } from './pages/StatsPage';
 import { localDay, today } from './study/review';
 import type { CardDraft, DeckTheme, Page } from './types';
 
@@ -20,8 +21,9 @@ export default function App() {
   const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
   const [page, setPage] = useState<Page>('home');
   const [openDeckId, setOpenDeckId] = useState('english');
-  const [modal, setModal] = useState<'deck' | 'card' | 'account' | null>(null);
+  const [modal, setModal] = useState<'deck' | 'card' | 'account' | 'free-review' | null>(null);
   const [notice, setNotice] = useState('');
+  const [statsFilters, setStatsFilters] = useState<StatsFilters>({ period: 'all', deckId: null });
   const accountTrigger = useRef<HTMLButtonElement>(null);
 
   const { decks, cards, studyLogs, createDeck, createCards, recordReview } = useStudyData();
@@ -42,6 +44,23 @@ export default function App() {
     review.start(deckId);
     setPage('review');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startPractice(cardIds: string[]) {
+    review.startPractice(cardIds);
+    setPage('review');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startFreeReview(deckId: string) {
+    review.startFree(deckId);
+    setModal(null);
+    setPage('review');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function chooseFreeReviewDeck() {
+    setModal('free-review');
   }
 
   function navigate(next: Page) {
@@ -120,6 +139,7 @@ export default function App() {
               openDeck={openDeck}
               go={navigate}
               startReview={startReview}
+              onFreeReview={chooseFreeReviewDeck}
             />
           )}
           {page === 'decks' && (
@@ -132,11 +152,12 @@ export default function App() {
               back={() => navigate('decks')}
               onAdd={() => setModal('card')}
               onStudy={() => startReview(selectedDeck.id)}
+              onFreeReview={() => startFreeReview(selectedDeck.id)}
             />
           )}
           {page === 'review' && (
             <ReviewPage
-              key={review.current?.id}
+              key={`${review.sessionId}-${review.current?.id ?? 'empty'}`}
               current={review.current}
               theme={reviewTheme}
               progress={review.progress}
@@ -147,18 +168,40 @@ export default function App() {
               flip={review.flip}
               rate={review.rate}
               restart={startReview}
+              mode={review.mode}
+              onStats={() => navigate('stats')}
+              onFreeReview={chooseFreeReviewDeck}
               onCalendar={() => navigate('calendar')}
             />
           )}
           {page === 'calendar' && <CalendarPage logs={studyLogs} />}
-          {page === 'stats' && <StatsPage cards={cards} logs={studyLogs} back={() => navigate('home')} />}
+          {page === 'stats' && (
+            <StatsPage
+              decks={decks}
+              cards={cards}
+              logs={studyLogs}
+              openDeck={openDeck}
+              startPractice={startPractice}
+              filters={statsFilters}
+              onFilterChange={setStatsFilters}
+              back={() => navigate('home')}
+            />
+          )}
         </div>
         <BottomNav page={page} onNavigate={navigate} />
       </main>
-      {page !== 'calendar' && (
+      {page !== 'calendar' && page !== 'stats' && (
         <button className="floating-add" onClick={() => setModal('card')} aria-label="새 카드 추가">
           <Plus size={23} />
         </button>
+      )}
+      {modal === 'free-review' && (
+        <FreeReviewModal
+          decks={decks}
+          cards={cards}
+          onStart={startFreeReview}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal === 'account' && <AccountModal onClose={closeAccount} />}
       {modal === 'deck' && <CreateDeckModal onClose={() => setModal(null)} onCreate={addDeck} />}

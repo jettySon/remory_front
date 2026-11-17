@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronRight, Cloud, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, Cloud, Plus, RotateCcw } from 'lucide-react';
 import { DeckIcon } from '../components/DeckVisuals';
 import { SectionHeading } from '../components/SectionHeading';
 import { cardFields } from '../study/cards';
@@ -12,12 +12,14 @@ export function DeckDetailPage({
   back,
   onAdd,
   onStudy,
+  onFreeReview,
 }: {
   deck: Deck;
   cards: StudyCard[];
   back: () => void;
   onAdd: () => void;
   onStudy: () => void;
+  onFreeReview: () => void;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
@@ -42,6 +44,16 @@ export function DeckDetailPage({
           </button>
         </div>
       </div>
+      {cards.length > 0 && (
+        <button className="free-deck-action" type="button" onClick={onFreeReview}>
+          <RotateCcw size={18} aria-hidden="true" />
+          <span>
+            <strong>자유 복습</strong>
+            <small>이 덱의 카드 {cards.length}장 다시 보기</small>
+          </span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </button>
+      )}
       <SectionHeading title="카드 목록" />
       <div className="card-list">
         {cards.map((card, i) => (

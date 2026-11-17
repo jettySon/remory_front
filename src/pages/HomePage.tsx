@@ -37,6 +37,7 @@ export function HomePage({
   openDeck,
   go,
   startReview,
+  onFreeReview,
 }: {
   decks: Deck[];
   cards: StudyCard[];
@@ -44,6 +45,7 @@ export function HomePage({
   openDeck: (id: string) => void;
   go: (p: Page) => void;
   startReview: (deckId?: string) => void;
+  onFreeReview: () => void;
 }) {
   const due = cards.filter(isDue).length;
   const completed = logs.filter((l) => localDay(l.date) === today()).length;
@@ -59,13 +61,13 @@ export function HomePage({
         <Mascot className="hero-mascot" />
         <div className="hero-content">
           <h1>오늘의 복습</h1>
-          <p>잊기 전에 한 번 더 떠올려 봐요.</p>
+          <p>{due > 0 ? '잊기 전에 한 번 더 떠올려 봐요.' : '지금 예정된 복습이 없어요.'}</p>
         </div>
         <button
           className="hero-action-card"
           type="button"
-          onClick={() => startReview()}
-          aria-label={`복습할 카드 ${due}장, ${due ? '복습 시작하기' : '복습 확인하기'}`}
+          onClick={due > 0 ? () => startReview() : onFreeReview}
+          aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : '자유 복습할 덱 선택'}
         >
           <svg
             className="hero-action-cloud"
@@ -84,13 +86,17 @@ export function HomePage({
               fill="url(#review-cloud-fill)"
             />
           </svg>
-          <span className="hero-count">
-            <span>복습할 카드</span>
-            <strong>
-              {due}
-              <small>장</small>
-            </strong>
-          </span>
+          {due > 0 ? (
+            <span className="hero-count">
+              <span>복습할 카드</span>
+              <strong>
+                {due}
+                <small>장</small>
+              </strong>
+            </span>
+          ) : (
+            <span className="hero-free-label">자유 복습</span>
+          )}
           <ArrowRight className="hero-action-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
         </button>
       </section>
