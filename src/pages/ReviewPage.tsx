@@ -15,6 +15,7 @@ export function ReviewPage({
   flipped,
   flip,
   rate,
+  pendingRating,
   saving,
   restart,
   onCalendar,
@@ -33,6 +34,7 @@ export function ReviewPage({
   flip: () => void;
   saving: boolean;
   rate: (r: Rating) => void;
+  pendingRating?: Rating;
   restart: () => void;
   onCalendar: () => void;
   mode: ReviewMode;
@@ -153,7 +155,12 @@ export function ReviewPage({
           <p>답이 얼마나 잘 떠올랐나요?</p>
           <div className="rating-grid">
             {(['again', 'hard', 'good', 'easy'] as Rating[]).map((r) => (
-              <button className={`rating rating-${r}`} key={r} disabled={saving} onClick={() => rate(r)}>
+              <button
+                className={`rating rating-${r}`}
+                key={r}
+                disabled={saving || Boolean(pendingRating && pendingRating !== r)}
+                onClick={() => rate(r)}
+              >
                 <span>{ratingLabels[r]}</span>
                 <small>
                   {r === 'again'

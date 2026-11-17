@@ -1,28 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { authenticate, endSession, type AccountAction, type Session } from '../api/account';
+import { ApiError } from '../api/request';
 import {
-  ApiError,
-  authenticate,
-  endSession,
   fetchStudy,
   importStudy,
-  putStudy,
-  type AccountAction,
-  type Session,
+  saveCards,
+  saveDeck,
+  saveReview,
   type StudyData,
-  type StudySnapshot,
-} from '../api/account';
+  type StudyLibrary,
+} from '../api/study';
 import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy } from '../study/guestData';
+import { newStudyId } from '../study/review';
 import type { CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
 
 const sessionKey = 'remory-account-session';
-const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const delayMs: Record<Rating, number> = {
   again: 10 * 60_000,
   hard: 86_400_000,
   good: 3 * 86_400_000,
   easy: 7 * 86_400_000,
 };
-type Connection = { session: Session; snapshot: StudySnapshot };
+type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
 
 function readSession(): Session | null {
@@ -45,6 +44,12 @@ function rememberSession(session: Session | null) {
   }
 }
 
+function mergeById<T extends { id: string }>(items: T[], updates: T[]): T[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  for (const update of updates) byId.set(update.id, update);
+  return [...byId.values()];
+}
+
 export function useStudyData() {
   const [guest, setGuest] = useState(readGuestStudy);
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -53,6 +58,9 @@ export function useStudyData() {
   const [restoreError, setRestoreError] = useState(false);
   const [restoreAttempt, setRestoreAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [activityVersion, setActivityVersion] = useState(0);
+  const pendingDeck = useRef<{ key: string; id: string } | undefined>(undefined);
+  const pendingCards = useRef<{ key: string; ids: string[] } | undefined>(undefined);
   const [syncError, setSyncError] = useState('');
   const inFlight = useRef(false);
 
@@ -60,8 +68,8 @@ export function useStudyData() {
     if (!savedSession) return;
     const controller = new AbortController();
     fetchStudy(savedSession.accessToken, controller.signal)
-      .then((snapshot) => {
-        if (!controller.signal.aborted) setConnection({ session: savedSession, snapshot });
+      .then((library) => {
+        if (!controller.signal.aborted) setConnection({ session: savedSession, library });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -124,14 +132,10 @@ export function useStudyData() {
       }
 
       const local = readGuestStudy();
-      let snapshot: StudySnapshot;
+      let library: StudyLibrary;
       try {
-        snapshot = local.changed
-          ? await importStudy(session.accessToken, {
-              ...local.data,
-              logs: local.data.logs.filter(isStudyLog),
-            })
-          : await fetchStudy(session.accessToken);
+        if (local.changed) await importStudy(session.accessToken, local.data);
+        library = await fetchStudy(session.accessToken);
       } catch {
         void endSession(session.accessToken).catch(() => undefined);
         const signup = action === 'signup' ? '가입은 완료됐어요. 다시 로그인해 주세요. ' : '';
@@ -157,7 +161,9 @@ export function useStudyData() {
         }
       }
       rememberSession(session);
-      setConnection({ session, snapshot });
+      pendingDeck.current = undefined;
+      pendingCards.current = undefined;
+      setConnection({ session, library });
       return local.changed;
     } finally {
       inFlight.current = false;
@@ -179,11 +185,14 @@ export function useStudyData() {
     }
   }
 
-  async function updateStudy(update: StudyUpdate) {
+  async function updateStudy(
+    updateGuest: StudyUpdate,
+    updateAccount: (token: string) => Promise<(library: StudyLibrary) => StudyLibrary>,
+  ) {
     if (inFlight.current || restoring || restoreError) return false;
     setSyncError('');
     if (!connection) {
-      const next = { data: update(readGuestStudy().data), changed: true };
+      const next = { data: updateGuest(readGuestStudy().data), changed: true };
       try {
         writeGuestStudy(next);
         setGuest(next);
@@ -197,27 +206,16 @@ export function useStudyData() {
     inFlight.current = true;
     setSaving(true);
     const { session } = connection;
-    const token = session.accessToken;
     try {
-      let snapshot = connection.snapshot;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const applied = update(snapshot.data);
-        if (applied === snapshot.data) {
-          setConnection({ session, snapshot });
-          return true;
-        }
-        try {
-          const saved = await putStudy(token, { revision: snapshot.revision, data: applied });
-          setConnection({ session, snapshot: saved });
-          return true;
-        } catch (error) {
-          if (error instanceof ApiError && error.status < 500 && error.status !== 409) throw error;
-          snapshot = await fetchStudy(token);
-          setConnection({ session, snapshot });
-        }
+      let apply: (library: StudyLibrary) => StudyLibrary;
+      try {
+        apply = await updateAccount(session.accessToken);
+      } catch (error) {
+        if (error instanceof ApiError && error.status < 500) throw error;
+        apply = await updateAccount(session.accessToken);
       }
-      if (update(snapshot.data) === snapshot.data) return true;
-      throw new Error('Concurrent study changes');
+      setConnection((current) => current && { ...current, library: apply(current.library) });
+      return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         rememberSession(null);
@@ -238,42 +236,72 @@ export function useStudyData() {
     }
   }
 
-  async function createDeck(deck: Omit<Deck, 'id'>) {
-    const id = uid();
-    const saved = await updateStudy((data) =>
-      data.decks.some((item) => item.id === id) ? data : { ...data, decks: [...data.decks, { ...deck, id }] },
+  async function createDeck(draft: Omit<Deck, 'id'>) {
+    const key = JSON.stringify(draft);
+    const id = pendingDeck.current?.key === key ? pendingDeck.current.id : newStudyId();
+    pendingDeck.current = { key, id };
+    const deck = { ...draft, id };
+    const saved = await updateStudy(
+      (data) => ({ ...data, decks: mergeById(data.decks, [deck]) }),
+      async (token) => {
+        const result = await saveDeck(token, deck);
+        return (library) => ({ ...library, decks: mergeById(library.decks, [result]) });
+      },
     );
+    if (saved) pendingDeck.current = undefined;
     return saved ? id : null;
   }
 
-  function createCards(deckId: string, drafts: CardDraft[]) {
+  async function createCards(deckId: string, drafts: CardDraft[]) {
+    const key = JSON.stringify({ deckId, drafts });
+    const ids = pendingCards.current?.key === key ? pendingCards.current.ids : drafts.map(newStudyId);
+    pendingCards.current = { key, ids };
+    const request = drafts.map((draft, index) => ({ ...draft, id: ids[index] }));
     const dueAt = new Date().toISOString();
-    const newCards = drafts.map((draft) => ({ ...draft, id: uid(), deckId, dueAt, repetitions: 0 }));
-    return updateStudy((data) => {
-      const existing = new Set(data.cards.map((card) => card.id));
-      const missing = newCards.filter((card) => !existing.has(card.id));
-      return missing.length ? { ...data, cards: [...data.cards, ...missing] } : data;
-    });
+    const newCards = request.map((draft) => ({ ...draft, deckId, dueAt, repetitions: 0 }));
+    const saved = await updateStudy(
+      (data) => ({ ...data, cards: mergeById(data.cards, newCards) }),
+      async (token) => {
+        const cards = await saveCards(token, deckId, request);
+        return (library) => ({ ...library, cards: mergeById(library.cards, cards) });
+      },
+    );
+    if (saved) pendingCards.current = undefined;
+    return saved;
   }
 
-  function recordReview(cardId: string, rating: Rating, mode: ReviewMode) {
+  async function recordReview(cardId: string, rating: Rating, mode: ReviewMode, id: string) {
     const now = Date.now();
     const dueAt = new Date(now + delayMs[rating]).toISOString();
-    const log: ReviewLog = { id: uid(), cardId, rating, date: new Date(now).toISOString(), mode };
-    return updateStudy((data) => {
-      if (data.logs.some((item) => item.id === log.id)) return data;
-      const cards =
-        mode === 'scheduled'
-          ? data.cards.map((card) =>
-              card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
-            )
-          : data.cards;
-      return { ...data, cards, logs: [...data.logs, log] };
-    });
+    const log: ReviewLog = { id, cardId, rating, date: new Date(now).toISOString(), mode };
+    const saved = await updateStudy(
+      (data) => {
+        if (data.logs.some((item) => item.id === id)) return data;
+        const cards =
+          mode === 'scheduled'
+            ? data.cards.map((card) =>
+                card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
+              )
+            : data.cards;
+        return { ...data, cards, logs: [...data.logs, log] };
+      },
+      async (token) => {
+        const { progress } = await saveReview(token, { id, cardId, rating, mode });
+        return (library) => ({
+          ...library,
+          cards: library.cards.map((card) => (card.id === progress.id ? { ...card, ...progress } : card)),
+        });
+      },
+    );
+    if (saved && connection) setActivityVersion((value) => value + 1);
+    return saved;
   }
 
-  const { decks, cards, logs } = connection?.snapshot.data ?? guest.data;
-  const studyLogs = useMemo(() => logs.filter(isStudyLog), [logs]);
+  const { decks, cards } = connection?.library ?? guest.data;
+  const studyLogs = useMemo(
+    () => (connection ? [] : guest.data.logs.filter(isStudyLog)),
+    [connection, guest.data.logs],
+  );
   return {
     decks,
     cards,
@@ -284,6 +312,8 @@ export function useStudyData() {
     connect,
     disconnect,
     account: connection?.session.account,
+    token: connection?.session.accessToken,
+    activityVersion,
     guestPending: guest.changed,
     restoring,
     restoreError,

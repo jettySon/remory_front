@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
-import { isDue } from '../study/review';
+import { useMemo, useRef, useState } from 'react';
+import { isDue, newStudyId } from '../study/review';
 import type { Rating, ReviewMode, StudyCard } from '../types';
 
 export function useReviewSession(
   cards: StudyCard[],
-  recordReview: (cardId: string, rating: Rating, mode: ReviewMode) => Promise<boolean>,
+  recordReview: (cardId: string, rating: Rating, mode: ReviewMode, id: string) => Promise<boolean>,
 ) {
   const [sessionId, setSessionId] = useState(0);
   const [queue, setQueue] = useState<string[]>([]);
@@ -14,9 +14,11 @@ export function useReviewSession(
   const [finished, setFinished] = useState(false);
   const current = useMemo(() => cards.find((card) => card.id === queue[progress]), [cards, queue, progress]);
   const total = queue.length;
+  const reviewAttempt = useRef<{ id: string; rating: Rating } | null>(null);
 
   function startQueue(ids: string[], nextMode: ReviewMode) {
     setSessionId((previous) => previous + 1);
+    reviewAttempt.current = null;
     setQueue(ids);
     setMode(nextMode);
     setProgress(0);
@@ -52,7 +54,11 @@ export function useReviewSession(
   }
 
   async function rate(rating: Rating) {
-    if (!current || !(await recordReview(current.id, rating, mode))) return;
+    if (!current) return;
+    const attempt = reviewAttempt.current ?? { id: newStudyId(), rating };
+    reviewAttempt.current = attempt;
+    if (!(await recordReview(current.id, attempt.rating, mode, attempt.id))) return;
+    reviewAttempt.current = null;
     setFlipped(false);
     if (progress + 1 >= total) setFinished(true);
     else setProgress((previous) => previous + 1);
@@ -71,5 +77,6 @@ export function useReviewSession(
     startFree,
     flip,
     rate,
+    pendingRating: reviewAttempt.current?.rating,
   };
 }

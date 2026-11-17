@@ -4,6 +4,7 @@ import { localDay } from './review';
 export const reviewRatings = ['again', 'hard', 'good', 'easy'] as const;
 
 export type RatingCounts = Record<Rating, number> & { total: number };
+export type DailyCounts = Partial<Record<string, RatingCounts>>;
 
 function emptyCounts(): RatingCounts {
   return { total: 0, again: 0, hard: 0, good: 0, easy: 0 };
@@ -59,13 +60,20 @@ export function getReviewInsights(decks: Deck[], cards: StudyCard[], logs: Revie
   };
 }
 
-export function getReviewWeek(logs: ReviewLog[], cards: StudyCard[], deckId?: string) {
+export function weekDays() {
   const now = new Date();
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(now);
-    date.setDate(now.getDate() - (6 - index));
-    return { key: localDay(date), label: `${date.getMonth() + 1}/${date.getDate()}`, counts: emptyCounts() };
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - index));
+    return { key: localDay(date), label: `${date.getMonth() + 1}/${date.getDate()}`, weekday: date.getDay() };
   });
+}
+
+export function weekWithCounts(counts: DailyCounts | undefined) {
+  return weekDays().map((day) => ({ ...day, counts: counts?.[day.key] ?? emptyCounts() }));
+}
+
+export function getReviewWeek(logs: ReviewLog[], cards: StudyCard[], deckId?: string) {
+  const days = weekWithCounts(undefined);
   const byDay = new Map(days.map((day) => [day.key, day.counts]));
   const cardIds = deckId
     ? new Set(cards.filter((card) => card.deckId === deckId).map((card) => card.id))

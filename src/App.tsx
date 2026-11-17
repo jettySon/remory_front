@@ -8,13 +8,16 @@ import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
 import { useStudyData } from './hooks/useStudyData';
+import { useStudyQuery } from './hooks/useStudyQuery';
 import { CalendarPage } from './pages/CalendarPage';
 import { DeckDetailPage } from './pages/DeckDetailPage';
 import { DecksPage } from './pages/DecksPage';
 import { HomePage } from './pages/HomePage';
 import { ReviewPage } from './pages/ReviewPage';
 import { StatsPage, type StatsFilters } from './pages/StatsPage';
+import { getReviewWeek, type DailyCounts } from './study/insights';
 import { localDay, today } from './study/review';
+import { activityPath } from './api/study';
 import type { AccountAction } from './api/account';
 import type { CardDraft, DeckTheme, Page } from './types';
 
@@ -28,10 +31,21 @@ export default function App() {
   const accountTrigger = useRef<HTMLButtonElement>(null);
 
   const study = useStudyData();
-  const { decks, cards, studyLogs, account, saving } = study;
+  const { decks, cards, studyLogs, account, token, saving, activityVersion } = study;
   const review = useReviewSession(cards, study.recordReview);
   const dark = theme === 'dark';
-  const todayReviews = studyLogs.filter((log) => localDay(log.date) === today()).length;
+  const date = new Date();
+  const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 6);
+  const tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+  const remoteActivity = useStudyQuery<DailyCounts>(
+    token,
+    activityPath(localDay(weekStart), localDay(tomorrow)),
+    activityVersion,
+  );
+  const activity = token
+    ? remoteActivity.data
+    : Object.fromEntries(getReviewWeek(studyLogs, cards).map(({ key, counts }) => [key, counts]));
+  const todayReviews = activity?.[today()]?.total ?? 0;
   const selectedDeck = decks.find((deck) => deck.id === openDeckId) || decks[0];
   const selectedCards = cards.filter((card) => card.deckId === selectedDeck?.id);
   const reviewTheme = decks.find((deck) => deck.id === review.current?.deckId)?.theme;
@@ -198,7 +212,7 @@ export default function App() {
                 <HomePage
                   decks={decks}
                   cards={cards}
-                  logs={studyLogs}
+                  activity={activity}
                   openDeck={openDeck}
                   go={navigate}
                   startReview={startReview}
@@ -231,6 +245,7 @@ export default function App() {
                   flipped={review.flipped}
                   flip={review.flip}
                   rate={review.rate}
+                  pendingRating={review.pendingRating}
                   saving={saving}
                   restart={startReview}
                   mode={review.mode}
@@ -247,12 +262,16 @@ export default function App() {
                   onCalendar={() => navigate('calendar')}
                 />
               )}
-              {page === 'calendar' && <CalendarPage logs={studyLogs} />}
+              {page === 'calendar' && (
+                <CalendarPage logs={studyLogs} token={token} activityVersion={activityVersion} />
+              )}
               {page === 'stats' && (
                 <StatsPage
                   decks={decks}
                   cards={cards}
                   logs={studyLogs}
+                  token={token}
+                  activityVersion={activityVersion}
                   openDeck={openDeck}
                   startPractice={startPractice}
                   filters={statsFilters}

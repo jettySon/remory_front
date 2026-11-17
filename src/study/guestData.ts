@@ -1,4 +1,4 @@
-import type { StudyData } from '../api/account';
+import type { StudyData } from '../api/study';
 import type { ReviewLog } from '../types';
 
 const guestKey = 'remory-guest-v2';

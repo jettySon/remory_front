@@ -2,20 +2,17 @@ import { ArrowRight, BarChart3, Check, ChevronRight } from 'lucide-react';
 import { DeckTile } from '../components/DeckVisuals';
 import { Mascot, Star } from '../components/Illustrations';
 import { SectionHeading } from '../components/SectionHeading';
-import { isDue, localDay, today } from '../study/review';
-import type { Deck, Page, ReviewLog, StudyCard } from '../types';
+import { type DailyCounts, weekDays } from '../study/insights';
+import { isDue, today } from '../study/review';
+import type { Deck, Page, StudyCard } from '../types';
 
-function WeekRow({ logs }: { logs: ReviewLog[] }) {
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const dt = new Date();
-    dt.setHours(12, 0, 0, 0);
-    dt.setDate(dt.getDate() - (6 - i));
-    return {
-      label: ['일', '월', '화', '수', '목', '금', '토'][dt.getDay()],
-      date: localDay(dt),
-      n: logs.filter((l) => localDay(l.date) === localDay(dt)).length,
-    };
-  });
+function WeekRow({ activity }: { activity?: DailyCounts }) {
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  const days = weekDays().map(({ key, weekday }) => ({
+    date: key,
+    label: weekdays[weekday],
+    n: activity?.[key]?.total ?? 0,
+  }));
   return (
     <div className="week-calendar">
       {days.map((d, i) => (
@@ -33,7 +30,7 @@ function WeekRow({ logs }: { logs: ReviewLog[] }) {
 export function HomePage({
   decks,
   cards,
-  logs,
+  activity,
   openDeck,
   go,
   startReview,
@@ -42,7 +39,7 @@ export function HomePage({
 }: {
   decks: Deck[];
   cards: StudyCard[];
-  logs: ReviewLog[];
+  activity?: DailyCounts;
   openDeck: (id: string) => void;
   go: (p: Page) => void;
   startReview: (deckId?: string) => void;
@@ -50,7 +47,7 @@ export function HomePage({
   onCreate: () => void;
 }) {
   const due = cards.filter(isDue).length;
-  const completed = logs.filter((l) => localDay(l.date) === today()).length;
+  const completed = activity?.[today()]?.total ?? 0;
   const hasCards = cards.length > 0;
   const actionLabel = hasCards ? '자유 복습' : decks.length ? '첫 카드 추가' : '첫 덱 만들기';
   return (
@@ -112,7 +109,7 @@ export function HomePage({
       </section>
       <section className="week-section">
         <SectionHeading title="최근 7일 복습" />
-        <WeekRow logs={logs} />
+        <WeekRow activity={activity} />
       </section>
       {decks.length > 0 && (
         <section>

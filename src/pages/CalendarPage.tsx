@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { activityPath } from '../api/study';
+import { useStudyQuery } from '../hooks/useStudyQuery';
+import type { DailyCounts } from '../study/insights';
 import { localDay, today } from '../study/review';
 import type { ReviewLog } from '../types';
 
@@ -14,7 +17,15 @@ function CalendarCloud({ className }: { className: string }) {
   );
 }
 
-export function CalendarPage({ logs }: { logs: ReviewLog[] }) {
+export function CalendarPage({
+  logs,
+  token,
+  activityVersion,
+}: {
+  logs: ReviewLog[];
+  token?: string;
+  activityVersion: number;
+}) {
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -23,12 +34,22 @@ export function CalendarPage({ logs }: { logs: ReviewLog[] }) {
   const monthIndex = month.getMonth();
   const currentDay = today();
   const monthLabel = `${year}년 ${monthIndex + 1}월`;
+  const nextMonth = new Date(year, monthIndex + 1, 1);
+  const remote = useStudyQuery<DailyCounts>(
+    token,
+    activityPath(localDay(month), localDay(nextMonth)),
+    activityVersion,
+  );
   const counts = new Map<string, number>();
-  for (const log of logs) {
-    const date = new Date(log.date);
-    if (date.getFullYear() !== year || date.getMonth() !== monthIndex) continue;
-    const day = localDay(date);
-    counts.set(day, (counts.get(day) ?? 0) + 1);
+  if (token) {
+    for (const [day, totals] of Object.entries(remote.data ?? {})) counts.set(day, totals?.total ?? 0);
+  } else {
+    for (const log of logs) {
+      const date = new Date(log.date);
+      if (date.getFullYear() !== year || date.getMonth() !== monthIndex) continue;
+      const day = localDay(date);
+      counts.set(day, (counts.get(day) ?? 0) + 1);
+    }
   }
   const days = Array.from({ length: new Date(year, monthIndex + 1, 0).getDate() }, (_, index) => index + 1);
   const moveMonth = (offset: number) => setMonth(new Date(year, monthIndex + offset, 1));
@@ -84,8 +105,19 @@ export function CalendarPage({ logs }: { logs: ReviewLog[] }) {
         </div>
         <div className="month-footer">
           <p className="month-summary" aria-live="polite">
-            {counts.size ? `복습한 날 ${counts.size}일` : '이 달에는 복습 기록이 없어요.'}
+            {remote.loading
+              ? '학습 기록을 불러오는 중이에요.'
+              : remote.failed
+                ? '학습 기록을 불러오지 못했어요.'
+                : counts.size
+                  ? `복습한 날 ${counts.size}일`
+                  : '이 달에는 복습 기록이 없어요.'}
           </p>
+          {remote.failed && (
+            <button className="plain-link" onClick={remote.retry}>
+              다시 불러오기
+            </button>
+          )}
           <span className="month-legend">
             <CalendarCloud className="month-legend-cloud" /> 복습한 날
           </span>
