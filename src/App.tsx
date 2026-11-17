@@ -4,6 +4,8 @@ import { AppHeader, BottomNav } from './components/Navigation';
 import { AccountModal } from './components/dialogs/AccountModal';
 import { CreateCardModal } from './components/dialogs/CreateCardModal';
 import { CreateDeckModal } from './components/dialogs/CreateDeckModal';
+import { DeleteCardModal } from './components/dialogs/DeleteCardModal';
+import { EditCardModal } from './components/dialogs/EditCardModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
@@ -19,13 +21,20 @@ import { getReviewWeek, type DailyCounts } from './study/insights';
 import { localDay, today } from './study/review';
 import { activityPath } from './api/study';
 import type { AccountAction } from './api/account';
-import type { CardDraft, DeckTheme, Page } from './types';
+import type { CardContent, CardDraft, DeckTheme, Page } from './types';
+
+type AppModal =
+  | 'deck'
+  | 'card'
+  | 'account'
+  | 'free-review'
+  | { type: 'edit-card' | 'delete-card'; cardId: string };
 
 export default function App() {
   const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
   const [page, setPage] = useState<Page>('home');
   const [openDeckId, setOpenDeckId] = useState<string>();
-  const [modal, setModal] = useState<'deck' | 'card' | 'account' | 'free-review' | null>(null);
+  const [modal, setModal] = useState<AppModal | null>(null);
   const [notice, setNotice] = useState('');
   const [statsFilters, setStatsFilters] = useState<StatsFilters>({ period: 'all', deckId: null });
   const accountTrigger = useRef<HTMLButtonElement>(null);
@@ -48,6 +57,8 @@ export default function App() {
   const todayReviews = activity?.[today()]?.total ?? 0;
   const selectedDeck = decks.find((deck) => deck.id === openDeckId) || decks[0];
   const selectedCards = cards.filter((card) => card.deckId === selectedDeck?.id);
+  const cardModal = modal && typeof modal === 'object' ? modal : null;
+  const actionCard = cardModal ? cards.find((card) => card.id === cardModal.cardId) : undefined;
   const reviewTheme = decks.find((deck) => deck.id === review.current?.deckId)?.theme;
 
   useEffect(() => {
@@ -150,6 +161,18 @@ export default function App() {
     setNotice(`카드 ${drafts.length}장을 추가했어요.`);
   }
 
+  async function editCard(cardId: string, content: CardContent) {
+    if (!(await study.editCard(cardId, content))) return;
+    setModal(null);
+    setNotice('카드를 수정했어요.');
+  }
+
+  async function deleteCard(cardId: string) {
+    if (!(await study.deleteCard(cardId))) return;
+    setModal(null);
+    setNotice('카드를 삭제했어요.');
+  }
+
   function openAccount(trigger: HTMLButtonElement) {
     if (saving) return;
     accountTrigger.current = trigger;
@@ -229,6 +252,8 @@ export default function App() {
                   cards={selectedCards}
                   back={() => navigate('decks')}
                   onAdd={() => setModal('card')}
+                  onEdit={(cardId) => setModal({ type: 'edit-card', cardId })}
+                  onDelete={(cardId) => setModal({ type: 'delete-card', cardId })}
                   onStudy={() => startReview(selectedDeck.id)}
                   onFreeReview={() => startFreeReview(selectedDeck.id)}
                 />
@@ -319,6 +344,24 @@ export default function App() {
           onClose={closeEditor}
           onCreate={addCards}
           saving={saving}
+        />
+      )}
+      {cardModal?.type === 'edit-card' && actionCard && (
+        <EditCardModal
+          key={actionCard.id}
+          card={actionCard}
+          theme={selectedDeck?.theme}
+          saving={saving}
+          onClose={closeEditor}
+          onSave={(content) => editCard(actionCard.id, content)}
+        />
+      )}
+      {cardModal?.type === 'delete-card' && actionCard && (
+        <DeleteCardModal
+          card={actionCard}
+          saving={saving}
+          onClose={closeEditor}
+          onDelete={() => deleteCard(actionCard.id)}
         />
       )}
       {study.syncError ? (

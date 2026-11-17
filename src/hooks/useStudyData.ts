@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { authenticate, endSession, type AccountAction, type Session } from '../api/account';
 import { ApiError } from '../api/request';
 import {
+  deleteStudyCard,
+  editStudyCard,
   fetchStudy,
   importStudy,
   saveCards,
@@ -13,7 +15,7 @@ import {
 import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy } from '../study/guestData';
 import { newStudyId } from '../study/review';
 import { nextReviewAt } from '../study/reviewScheduler';
-import type { CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
+import type { CardContent, CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
 
 const sessionKey = 'remory-account-session';
 type Connection = { session: Session; library: StudyLibrary };
@@ -187,13 +189,13 @@ export function useStudyData() {
     if (inFlight.current || restoring || restoreError) return false;
     setSyncError('');
     if (!connection) {
-      const next = { data: updateGuest(readGuestStudy().data), changed: true };
       try {
+        const next = { data: updateGuest(readGuestStudy().data), changed: true };
         writeGuestStudy(next);
         setGuest(next);
         return true;
-      } catch {
-        setSyncError('이 기기에 학습 기록을 저장하지 못했어요.');
+      } catch (error) {
+        setSyncError(error instanceof ApiError ? error.message : '이 기기에 학습 기록을 저장하지 못했어요.');
         return false;
       }
     }
@@ -265,11 +267,48 @@ export function useStudyData() {
     return saved;
   }
 
+  function editCard(cardId: string, content: CardContent) {
+    return updateStudy(
+      (data) => {
+        if (!data.cards.some((card) => card.id === cardId)) {
+          throw new ApiError(404, '수정할 카드를 찾지 못했어요.');
+        }
+        return {
+          ...data,
+          cards: data.cards.map((card) => (card.id === cardId ? { ...card, ...content } : card)),
+        };
+      },
+      async (token) => {
+        const edited = await editStudyCard(token, cardId, content);
+        return (library) => ({ ...library, cards: mergeById(library.cards, [edited]) });
+      },
+    );
+  }
+
+  async function deleteCard(cardId: string) {
+    const saved = await updateStudy(
+      (data) => ({
+        ...data,
+        cards: data.cards.filter((card) => card.id !== cardId),
+        logs: data.logs.filter((log) => log.cardId !== cardId),
+      }),
+      async (token) => {
+        await deleteStudyCard(token, cardId);
+        return (library) => ({ ...library, cards: library.cards.filter((card) => card.id !== cardId) });
+      },
+    );
+    if (saved && connection) setActivityVersion((value) => value + 1);
+    return saved;
+  }
+
   async function recordReview(cardId: string, rating: Rating, mode: ReviewMode, id: string) {
     const log: ReviewLog = { id, cardId, rating, date: new Date().toISOString(), mode };
     const saved = await updateStudy(
       (data) => {
         if (data.logs.some((item) => item.id === id)) return data;
+        if (!data.cards.some((card) => card.id === cardId)) {
+          throw new ApiError(404, '복습할 카드를 찾지 못했어요.');
+        }
         const logs = [...data.logs, log];
         if (mode !== 'scheduled') return { ...data, logs };
         const dueAt = nextReviewAt(data.logs, log);
@@ -302,6 +341,8 @@ export function useStudyData() {
     studyLogs,
     createDeck,
     createCards,
+    editCard,
+    deleteCard,
     recordReview,
     connect,
     disconnect,

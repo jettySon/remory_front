@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { CardFormFields } from './CardFormFields';
 import { ExcelImportFields } from './ExcelImportFields';
 import { Modal } from '../Modal';
 import SelectField from '../SelectField';
@@ -152,30 +153,7 @@ export function CreateCardModal({
             )}
           </div>
         ) : (
-          fields.map((field, index) => (
-            <label key={field}>
-              {field}
-              <textarea
-                required
-                rows={index === 0 ? 2 : 1}
-                value={values[index] ?? ''}
-                onChange={(e) => {
-                  const next = [...values];
-                  next[index] = e.target.value;
-                  setValues(next);
-                }}
-              />
-            </label>
-          ))
-        )}
-        {!bulk && preview && (
-          <div className={`mini-preview ${deck?.theme ?? ''}`}>
-            <small>미리보기 · {cardFields[kind].label}</small>
-            <strong>{values[0]}</strong>
-            {kind === 'choice' && <p>{values.slice(1, 4).filter(Boolean).join(' · ')}</p>}
-            <p>{kind === 'cloze' ? values[0]?.replace('___', () => values[1] || '___') : values[1]}</p>
-            {kind === 'word' && <p>{values[2]}</p>}
-          </div>
+          <CardFormFields kind={kind} values={values} onChange={setValues} theme={deck?.theme} />
         )}
         {error && (
           <p className="form-error" role="alert">

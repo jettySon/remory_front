@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronRight, Cloud, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, Cloud, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { DeckIcon } from '../components/DeckVisuals';
 import { SectionHeading } from '../components/SectionHeading';
 import { cardFields } from '../study/cards';
@@ -14,6 +14,8 @@ export function DeckDetailPage({
   cards,
   back,
   onAdd,
+  onEdit,
+  onDelete,
   onStudy,
   onFreeReview,
 }: {
@@ -21,6 +23,8 @@ export function DeckDetailPage({
   cards: StudyCard[];
   back: () => void;
   onAdd: () => void;
+  onEdit: (cardId: string) => void;
+  onDelete: (cardId: string) => void;
   onStudy: () => void;
   onFreeReview: () => void;
 }) {
@@ -60,34 +64,47 @@ export function DeckDetailPage({
       <SectionHeading title="카드 목록" />
       <div className="card-list">
         {cards.map((card, i) => (
-          <button
-            key={card.id}
-            className="card-list-row"
-            aria-expanded={expanded === card.id}
-            onClick={() => setExpanded(expanded === card.id ? null : card.id)}
-          >
-            <span className="list-index">{String(i + 1).padStart(2, '0')}</span>
-            <span className="list-card-content">
-              <small>{cardFields[card.kind ?? 'basic'].label}</small>
-              <strong>{card.front}</strong>
-              {expanded === card.id && (
-                <>
-                  <small>{card.back}</small>
-                  <small>
-                    {isDue(card) ? (
-                      '지금 복습할 수 있어요'
-                    ) : (
-                      <>
-                        다음 복습 ·{' '}
-                        <time dateTime={card.dueAt}>{reviewDate.format(new Date(card.dueAt))}</time>
-                      </>
-                    )}
-                  </small>
-                </>
-              )}
-            </span>
-            <ChevronRight size={17} className={expanded === card.id ? 'rotated' : ''} />
-          </button>
+          <div className="card-list-item" key={card.id}>
+            <button
+              type="button"
+              className="card-list-row"
+              aria-expanded={expanded === card.id}
+              onClick={() => setExpanded(expanded === card.id ? null : card.id)}
+            >
+              <span className="list-index">{String(i + 1).padStart(2, '0')}</span>
+              <span className="list-card-content">
+                <small>{cardFields[card.kind ?? 'basic'].label}</small>
+                <strong>{card.front}</strong>
+                {expanded === card.id && (
+                  <>
+                    <small>{card.back}</small>
+                    {Boolean(card.choices?.length) && <small>보기 · {card.choices?.join(' · ')}</small>}
+                    <small>
+                      {isDue(card) ? (
+                        '지금 복습할 수 있어요'
+                      ) : (
+                        <>
+                          다음 복습 ·{' '}
+                          <time dateTime={card.dueAt}>{reviewDate.format(new Date(card.dueAt))}</time>
+                        </>
+                      )}
+                    </small>
+                  </>
+                )}
+              </span>
+              <ChevronRight size={17} className={expanded === card.id ? 'rotated' : ''} />
+            </button>
+            {expanded === card.id && (
+              <div className="card-list-actions">
+                <button type="button" onClick={() => onEdit(card.id)}>
+                  <Pencil size={15} aria-hidden="true" /> 수정
+                </button>
+                <button className="card-remove-action" type="button" onClick={() => onDelete(card.id)}>
+                  <Trash2 size={15} aria-hidden="true" /> 삭제
+                </button>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       {cards.length === 0 && (

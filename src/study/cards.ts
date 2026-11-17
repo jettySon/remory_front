@@ -1,4 +1,4 @@
-import type { CardDraft, CardKind } from '../types';
+import type { CardContent, CardDraft, CardKind, StudyCard } from '../types';
 
 export const cardFields = {
   basic: { label: '질문과 답', fields: ['질문', '답'] },
@@ -32,4 +32,52 @@ export function makeDraft(kind: CardKind, values: string[]): CardDraft {
     return { kind, front, back, choices };
   }
   return { kind, front, back };
+}
+
+type CardEditFields = { kind: CardKind; values: string[]; labels?: string[] };
+
+export function readCardEditFields(card: StudyCard): CardEditFields {
+  if (card.kind === 'choice' || card.choices?.length) {
+    const wrongAnswers = card.choices?.filter((choice) => choice !== card.back) ?? [];
+    return { kind: 'choice', values: [card.front, card.back, wrongAnswers[0] ?? '', wrongAnswers[1] ?? ''] };
+  }
+
+  // 단어 카드와 빈칸 카드는 만들 때 입력값을 합쳐 저장하므로 편집할 때 다시 펼친다.
+  if (card.kind === 'word') {
+    const separator = card.back.indexOf('\n\n');
+    if (separator > 0 && card.back.slice(separator + 2).trim()) {
+      return {
+        kind: 'word',
+        values: [card.front, card.back.slice(0, separator), card.back.slice(separator + 2)],
+      };
+    }
+    return { kind: 'basic', labels: ['단어', '뜻과 예문'], values: [card.front, card.back] };
+  }
+
+  if (card.kind === 'cloze') {
+    const parts = card.front.split('___');
+    if (parts.length === 2) {
+      const [prefix, suffix] = parts;
+      const answer = card.back.slice(prefix.length, card.back.length - suffix.length);
+      if (answer.trim() && card.back.startsWith(prefix) && card.back.endsWith(suffix)) {
+        return { kind: 'cloze', values: [card.front, answer] };
+      }
+    }
+    return { kind: 'basic', labels: ['문장', '답'], values: [card.front, card.back] };
+  }
+
+  return { kind: 'basic', values: [card.front, card.back] };
+}
+
+export function makeCardEdit(card: StudyCard, kind: CardKind, values: string[]): CardContent {
+  if (kind === 'choice') {
+    const [front, back, firstWrong, secondWrong] = values.map((value) => value.trim());
+    const correctIndex = card.choices?.indexOf(card.back) ?? -1;
+    const choices = [firstWrong, secondWrong];
+    choices.splice(Math.max(0, correctIndex), 0, back);
+    return { front, back, choices };
+  }
+
+  const { front, back } = makeDraft(kind, values);
+  return { front, back };
 }

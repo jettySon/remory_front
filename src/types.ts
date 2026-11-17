@@ -16,4 +16,5 @@ export type ReviewMode = 'scheduled' | 'focus' | 'free';
 export type ReviewLog = { id: string; cardId: string; rating: Rating; date: string; mode?: ReviewMode };
 
 export type CardKind = 'basic' | 'word' | 'cloze' | 'choice';
-export type CardDraft = Pick<StudyCard, 'front' | 'back' | 'kind' | 'choices'>;
+export type CardContent = Pick<StudyCard, 'front' | 'back' | 'choices'>;
+export type CardDraft = CardContent & Pick<StudyCard, 'kind'>;

@@ -852,3 +852,70 @@ button { border: 0; }
 .sync-error { z-index: 25; max-width: min(calc(100% - 24px), 400px); }
 .sync-error button { flex: none; padding: 4px 6px; border-radius: 7px; background: #fff3; color: inherit; }
 .rating:disabled { opacity: .55; }
+
+.card-list-item {
+  display: flex;
+  flex-direction: column;
+}
+.card-list-row[aria-expanded='true'] {
+  border-radius: 17px 17px 0 0;
+}
+.card-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid #f0e7ef;
+  border-top: 0;
+  border-radius: 0 0 17px 17px;
+  background: #fffdfd;
+}
+:is(.card-list-actions, .card-delete-actions) button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 13px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: #f3ebf8;
+  font-size: 13px;
+  font-weight: 700;
+}
+.card-list-actions .card-remove-action {
+  color: #963950;
+  background: #f9e8ee;
+}
+.card-delete-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.card-delete-dialog > strong { font-size: 15px; }
+.card-delete-dialog > p { margin: 0; font-size: 13px; line-height: 1.6; }
+.card-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+.card-delete-actions .card-delete-confirm {
+  color: #fff;
+  background: #a14564;
+}
+[data-theme='dark'] .card-list-actions {
+  border-color: var(--night-border);
+  background: var(--night-panel);
+}
+[data-theme='dark'] :is(.card-list-actions, .card-delete-actions) button { background: #483659; }
+[data-theme='dark'] .card-list-actions .card-remove-action {
+  color: #ffcfdb;
+  background: #573345;
+}
+[data-theme='dark'] .card-delete-actions .card-delete-confirm {
+  color: #fff;
+  background: #a14564;
+}
