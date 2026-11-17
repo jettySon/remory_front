@@ -7,6 +7,7 @@ import { CreateDeckModal } from './components/dialogs/CreateDeckModal';
 import { DeleteCardModal } from './components/dialogs/DeleteCardModal';
 import { EditCardModal } from './components/dialogs/EditCardModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
+import { SettingsModal } from './components/dialogs/SettingsModal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
 import { useStudyData } from './hooks/useStudyData';
@@ -27,6 +28,7 @@ type AppModal =
   | 'deck'
   | 'card'
   | 'account'
+  | 'settings'
   | 'free-review'
   | { type: 'edit-card' | 'delete-card'; cardId: string };
 
@@ -38,11 +40,11 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [statsFilters, setStatsFilters] = useState<StatsFilters>({ period: 'all', deckId: null });
   const accountTrigger = useRef<HTMLButtonElement>(null);
+  const settingsTrigger = useRef<HTMLButtonElement>(null);
 
   const study = useStudyData();
   const { decks, cards, studyLogs, account, token, saving, activityVersion } = study;
   const review = useReviewSession(cards, study.recordReview);
-  const dark = theme === 'dark';
   const date = new Date();
   const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 6);
   const tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
@@ -173,6 +175,17 @@ export default function App() {
     setNotice('카드를 삭제했어요.');
   }
 
+  function openSettings(trigger: HTMLButtonElement) {
+    if (saving) return;
+    settingsTrigger.current = trigger;
+    setModal('settings');
+  }
+
+  function closeSettings() {
+    setModal(null);
+    settingsTrigger.current?.focus();
+  }
+
   function openAccount(trigger: HTMLButtonElement) {
     if (saving) return;
     accountTrigger.current = trigger;
@@ -227,8 +240,7 @@ export default function App() {
               reviewsToday={todayReviews}
               onAccount={openAccount}
               signedIn={Boolean(account)}
-              dark={dark}
-              toggleTheme={() => setTheme(dark ? 'light' : 'dark')}
+              onSettings={openSettings}
             />
             <div className="app-scroll" key={page}>
               {page === 'home' && (
@@ -325,6 +337,13 @@ export default function App() {
           cards={cards}
           onStart={startFreeReview}
           onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'settings' && (
+        <SettingsModal
+          dark={theme === 'dark'}
+          onToggleDark={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+          onClose={closeSettings}
         />
       )}
       {modal === 'account' && (

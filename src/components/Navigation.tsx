@@ -6,8 +6,7 @@ import {
   Flower2,
   Home,
   LibraryBig,
-  Moon,
-  Sun,
+  Settings,
   UserRound,
 } from 'lucide-react';
 import type { Page } from '../types';
@@ -15,15 +14,13 @@ import type { Page } from '../types';
 export function AppHeader({
   onStats,
   reviewsToday,
-  dark,
-  toggleTheme,
+  onSettings,
   onAccount,
   signedIn,
 }: {
   onStats: () => void;
   reviewsToday: number;
-  dark: boolean;
-  toggleTheme: () => void;
+  onSettings: (trigger: HTMLButtonElement) => void;
   signedIn: boolean;
   onAccount: (trigger: HTMLButtonElement) => void;
 }) {
@@ -39,13 +36,13 @@ export function AppHeader({
       </div>
       <div className="header-actions">
         <button
-          className="theme-toggle"
+          className="settings-trigger"
           type="button"
-          aria-label="다크 모드"
-          aria-pressed={dark}
-          onClick={toggleTheme}
+          aria-label="설정"
+          aria-haspopup="dialog"
+          onClick={(e) => onSettings(e.currentTarget)}
         >
-          {dark ? <Sun size={17} /> : <Moon size={17} />}
+          <Settings size={17} aria-hidden="true" />
         </button>
         <button className="header-streak" onClick={onStats} aria-label="학습 통계 보기">
           <Flower2 size={15} />
