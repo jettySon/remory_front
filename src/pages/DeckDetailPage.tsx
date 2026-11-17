@@ -4,7 +4,10 @@ import { DeckIcon } from '../components/DeckVisuals';
 import { SectionHeading } from '../components/SectionHeading';
 import { cardFields } from '../study/cards';
 import { deckKinds } from '../study/decks';
+import { isDue } from '../study/review';
 import type { Deck, StudyCard } from '../types';
+
+const reviewDate = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
 
 export function DeckDetailPage({
   deck,
@@ -60,13 +63,28 @@ export function DeckDetailPage({
           <button
             key={card.id}
             className="card-list-row"
+            aria-expanded={expanded === card.id}
             onClick={() => setExpanded(expanded === card.id ? null : card.id)}
           >
             <span className="list-index">{String(i + 1).padStart(2, '0')}</span>
             <span className="list-card-content">
               <small>{cardFields[card.kind ?? 'basic'].label}</small>
               <strong>{card.front}</strong>
-              {expanded === card.id && <small>{card.back}</small>}
+              {expanded === card.id && (
+                <>
+                  <small>{card.back}</small>
+                  <small>
+                    {isDue(card) ? (
+                      '지금 복습할 수 있어요'
+                    ) : (
+                      <>
+                        다음 복습 ·{' '}
+                        <time dateTime={card.dueAt}>{reviewDate.format(new Date(card.dueAt))}</time>
+                      </>
+                    )}
+                  </small>
+                </>
+              )}
             </span>
             <ChevronRight size={17} className={expanded === card.id ? 'rotated' : ''} />
           </button>

@@ -12,15 +12,10 @@ import {
 } from '../api/study';
 import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy } from '../study/guestData';
 import { newStudyId } from '../study/review';
+import { nextReviewAt } from '../study/reviewScheduler';
 import type { CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
 
 const sessionKey = 'remory-account-session';
-const delayMs: Record<Rating, number> = {
-  again: 10 * 60_000,
-  hard: 86_400_000,
-  good: 3 * 86_400_000,
-  easy: 7 * 86_400_000,
-};
 type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
 
@@ -271,19 +266,17 @@ export function useStudyData() {
   }
 
   async function recordReview(cardId: string, rating: Rating, mode: ReviewMode, id: string) {
-    const now = Date.now();
-    const dueAt = new Date(now + delayMs[rating]).toISOString();
-    const log: ReviewLog = { id, cardId, rating, date: new Date(now).toISOString(), mode };
+    const log: ReviewLog = { id, cardId, rating, date: new Date().toISOString(), mode };
     const saved = await updateStudy(
       (data) => {
         if (data.logs.some((item) => item.id === id)) return data;
-        const cards =
-          mode === 'scheduled'
-            ? data.cards.map((card) =>
-                card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
-              )
-            : data.cards;
-        return { ...data, cards, logs: [...data.logs, log] };
+        const logs = [...data.logs, log];
+        if (mode !== 'scheduled') return { ...data, logs };
+        const dueAt = nextReviewAt(data.logs, log);
+        const cards = data.cards.map((card) =>
+          card.id === cardId ? { ...card, dueAt, repetitions: card.repetitions + 1 } : card,
+        );
+        return { ...data, cards, logs };
       },
       async (token) => {
         const { progress } = await saveReview(token, { id, cardId, rating, mode });
