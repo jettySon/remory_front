@@ -32,9 +32,10 @@ function updateStability(stability: number, elapsedSeconds: number, rating: Rati
   }
 }
 
-// Keep this guest scheduler in sync with the backend ReviewScheduler.
+// 로그인 전에도 같은 일정을 계산할 수 있도록 백엔드 ReviewScheduler의 규칙을 적용한다.
 export function nextReviewAt(logs: ReviewLog[], review: ReviewLog) {
   const reviewedAt = Date.parse(review.date);
+  // 모드가 없는 예전 기록도 정규 복습으로 보고, 최근 이력을 고른 뒤 오래된 기록부터 적용한다.
   const history = logs
     .filter(
       (log) =>

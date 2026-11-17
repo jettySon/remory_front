@@ -55,6 +55,7 @@ export function useReviewSession(
 
   async function rate(rating: Rating) {
     if (!current) return;
+    // 저장 응답이 유실돼도 같은 ID와 평가로 재시도해야 복습이 중복 저장되지 않는다.
     const attempt = reviewAttempt.current ?? { id: newStudyId(), rating };
     reviewAttempt.current = attempt;
     if (!(await recordReview(current.id, attempt.rating, mode, attempt.id))) return;

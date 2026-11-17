@@ -141,7 +141,7 @@ export function useStudyData() {
 
       if (local.changed) {
         try {
-          // Only clear the local queue once the account copy has been confirmed.
+          // 서버 저장을 확인한 뒤, 이관 중 다른 탭에서 새 기록을 추가했는지도 확인한다.
           const latest = readGuestStudy();
           if (JSON.stringify(latest) === JSON.stringify(local)) {
             const empty = newGuestStudy();
@@ -279,6 +279,7 @@ export function useStudyData() {
         return { ...data, cards, logs };
       },
       async (token) => {
+        // 로그인 상태에서는 서버가 최신 복습 기록으로 계산한 일정과 횟수를 화면에 반영한다.
         const { progress } = await saveReview(token, { id, cardId, rating, mode });
         return (library) => ({
           ...library,
