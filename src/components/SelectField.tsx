@@ -1,14 +1,16 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
 type SelectFieldProps<Value extends string> = {
   label: string;
   value: Value;
-  options: ReadonlyArray<{ value: Value; label: string }>;
+  options: ReadonlyArray<{ value: Value; label: string; lang?: string }>;
   onChange: (value: Value) => void;
 };
 
 export default function SelectField<Value extends string>({ label, value, options, onChange }: SelectFieldProps<Value>) {
+  const { locale, t } = useLanguage();
   const id = useId();
   const fieldRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
@@ -82,9 +84,9 @@ export default function SelectField<Value extends string>({ label, value, option
       default: {
         if (event.key.length !== 1 || event.ctrlKey || event.altKey || event.metaKey) return;
         const time = Date.now();
-        const letter = event.key.toLocaleLowerCase();
+        const letter = event.key.toLocaleLowerCase(locale);
         const query = time - search.current.time < 650 ? search.current.text + letter : letter;
-        const match = (text: string) => options.findIndex(option => option.label.toLocaleLowerCase().startsWith(text));
+        const match = (text: string) => options.findIndex(option => option.label.toLocaleLowerCase(locale).startsWith(text));
         const index = match(query);
         const next = index < 0 ? match(letter) : index;
         if (next < 0) return;
@@ -113,7 +115,7 @@ export default function SelectField<Value extends string>({ label, value, option
         onClick={() => open ? setActiveIndex(null) : openAt(Math.max(selectedIndex, 0))}
         onKeyDown={handleKey}
       >
-        <span>{options[selectedIndex]?.label ?? '선택 가능한 항목 없음'}</span>
+        <span lang={options[selectedIndex]?.lang}>{options[selectedIndex]?.label ?? t('common.emptyOptions')}</span>
         <ChevronDown size={18} aria-hidden="true"/>
       </button>
       {open && <div className={`select-options ${opensUp ? 'opens-up' : ''}`} role="listbox" id={listId} aria-labelledby={`${id}-label`}>
@@ -127,7 +129,7 @@ export default function SelectField<Value extends string>({ label, value, option
           onPointerDown={event => event.preventDefault()}
           onClick={() => choose(index)}
         >
-          <span>{option.label}</span>
+          <span lang={option.lang}>{option.label}</span>
           {option.value === value && <Check size={16} aria-hidden="true"/>}
         </div>)}
       </div>}

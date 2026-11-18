@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import {
   BookHeart,
   CalendarDays,
@@ -24,6 +25,7 @@ export function AppHeader({
   signedIn: boolean;
   onAccount: (trigger: HTMLButtonElement) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <header className="app-header">
       <div className="brand">
@@ -38,15 +40,15 @@ export function AppHeader({
         <button
           className="settings-trigger"
           type="button"
-          aria-label="설정"
+          aria-label={t('settings.title')}
           aria-haspopup="dialog"
           onClick={(e) => onSettings(e.currentTarget)}
         >
           <Settings size={17} aria-hidden="true" />
         </button>
-        <button className="header-streak" onClick={onStats} aria-label="학습 통계 보기">
+        <button className="header-streak" onClick={onStats} aria-label={t('stats.open')}>
           <Flower2 size={15} />
-          <span>{reviewsToday ? `오늘 ${reviewsToday}장 복습` : '학습 통계'}</span>
+          <span>{reviewsToday ? t('home.headerReviews', { count: reviewsToday }) : t('stats.title')}</span>
           <ChevronRight size={14} />
         </button>
         <button
@@ -56,21 +58,22 @@ export function AppHeader({
           onClick={(e) => onAccount(e.currentTarget)}
         >
           <UserRound size={16} aria-hidden="true" />
-          {signedIn ? '내 계정' : '로그인'}
+          {signedIn ? t('account.mine') : t('account.login')}
         </button>
       </div>
     </header>
   );
 }
 export function BottomNav({ page, onNavigate }: { page: Page; onNavigate: (next: Page) => void }) {
+  const { t } = useLanguage();
   const tabs = [
-    { id: 'home' as Page, label: '홈', icon: Home },
-    { id: 'decks' as Page, label: '학습 덱', icon: LibraryBig },
-    { id: 'review' as Page, label: '복습', icon: BookHeart },
-    { id: 'calendar' as Page, label: '학습 기록', icon: CalendarDays },
+    { id: 'home' as Page, label: t('nav.home'), icon: Home },
+    { id: 'decks' as Page, label: t('nav.decks'), icon: LibraryBig },
+    { id: 'review' as Page, label: t('nav.review'), icon: BookHeart },
+    { id: 'calendar' as Page, label: t('nav.calendar'), icon: CalendarDays },
   ];
   return (
-    <nav className="bottom-nav" aria-label="주요 화면">
+    <nav className="bottom-nav" aria-label={t('nav.main')}>
       {tabs.map(({ id, label, icon: Icon }) => (
         <button
           key={id}

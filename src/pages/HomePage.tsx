@@ -1,4 +1,6 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { ArrowRight, BarChart3, Check, ChevronRight } from 'lucide-react';
+import { formatWeekday } from '../i18n/messages';
 import { DeckTile } from '../components/DeckVisuals';
 import { Mascot, Star } from '../components/Illustrations';
 import { SectionHeading } from '../components/SectionHeading';
@@ -7,10 +9,10 @@ import { isDue, today } from '../study/review';
 import type { Deck, Page, StudyCard } from '../types';
 
 function WeekRow({ activity }: { activity?: DailyCounts }) {
-  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  const days = weekDays().map(({ key, weekday }) => ({
+  const { locale } = useLanguage();
+  const days = weekDays().map(({ key, date }) => ({
     date: key,
-    label: weekdays[weekday],
+    label: formatWeekday(date, locale),
     n: activity?.[key]?.total ?? 0,
   }));
   return (
@@ -46,11 +48,12 @@ export function HomePage({
   onFreeReview: () => void;
   onCreate: () => void;
 }) {
+  const { t } = useLanguage();
   const due = cards.filter(isDue).length;
   const completed = activity?.[today()]?.total ?? 0;
   const hasCards = cards.length > 0;
   const isCreateDeck = !hasCards && decks.length === 0;
-  const actionLabel = hasCards ? '자유 복습' : decks.length ? '첫 카드 추가' : '덱 만들기';
+  const actionLabel = hasCards ? t('review.free') : decks.length ? t('cards.addFirst') : t('decks.create');
   return (
     <div className="page home-page">
       <section className="hero" aria-labelledby="home-hero-title">
@@ -65,24 +68,26 @@ export function HomePage({
         <div className="hero-content">
           <div>
             <h1 id="home-hero-title" lang={hasCards ? undefined : 'en'}>
-              {hasCards ? '오늘의 복습' : <>Little by <span>little.</span></>}
+              {hasCards ? t('home.todayReview') : <>Little by <span>little.</span></>}
             </h1>
             <p>
               {due > 0
-                ? '잊기 전에 한 번 더 떠올려 봐요.'
+                ? t('home.reviewHint')
                 : hasCards
-                  ? '지금 예정된 복습이 없어요.'
-                  : '오늘 배운 것부터 한 장씩.'}
+                  ? t('home.noScheduled')
+                  : t('home.firstHint')}
             </p>
           </div>
           <button
             className={isCreateDeck ? 'hero-action hero-create-deck' : 'hero-action'}
             type="button"
             onClick={due > 0 ? () => startReview() : hasCards ? onFreeReview : onCreate}
-            aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : undefined}
+            aria-label={due > 0 ? t('home.dueAction', { count: due }) : undefined}
           >
             {due > 0 ? (
-              <span className="hero-count">{due}<span>장</span></span>
+              <span className="hero-count">
+                {due}<span>{t('home.dueUnit', { count: due })}</span>
+              </span>
             ) : actionLabel}
             {!isCreateDeck && (
               <span className="hero-action-arrow" aria-hidden="true">
@@ -93,12 +98,12 @@ export function HomePage({
         </div>
       </section>
       <section className="week-section">
-        <SectionHeading title="최근 7일 복습" />
+        <SectionHeading title={t('home.recentWeek')} />
         <WeekRow activity={activity} />
       </section>
       {decks.length > 0 && (
         <section>
-          <SectionHeading title="나의 작은 공부방" action="전체 보기" onClick={() => go('decks')} />
+          <SectionHeading title={t('decks.room')} action={t('home.seeAll')} onClick={() => go('decks')} />
           <div className="deck-grid">
             {decks.slice(0, 4).map((d) => (
               <DeckTile
@@ -116,8 +121,8 @@ export function HomePage({
           <BarChart3 size={21} />
         </span>
         <span>
-          <strong>학습 통계</strong>
-          <small>{completed ? `오늘 ${completed}장 복습했어요.` : '오늘 복습한 카드가 없어요.'}</small>
+          <strong>{t('stats.title')}</strong>
+          <small>{completed ? t('home.reviewedToday', { count: completed }) : t('home.noReviewToday')}</small>
         </span>
         <ChevronRight size={18} />
       </button>

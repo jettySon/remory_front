@@ -64,7 +64,7 @@ export function weekDays() {
   const now = new Date();
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - index));
-    return { key: localDay(date), label: `${date.getMonth() + 1}/${date.getDate()}`, weekday: date.getDay() };
+    return { key: localDay(date), date };
   });
 }
 

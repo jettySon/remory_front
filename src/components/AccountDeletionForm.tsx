@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useRef, useState, type FormEvent } from 'react';
 import { UserRoundX } from 'lucide-react';
 import { ApiError } from '../api/request';
@@ -11,6 +12,7 @@ export function AccountDeletionForm({
   onDelete: (email: string, password: string) => Promise<void>;
   onCancel?: () => void;
 }) {
+  const { t } = useLanguage();
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState('');
   const working = useRef(false);
@@ -28,9 +30,13 @@ export function AccountDeletionForm({
       await onDelete(email ?? enteredEmail, password);
     } catch (error) {
       setFeedback(
-        error instanceof ApiError && error.message
-          ? error.message
-          : '계정 삭제 결과를 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+        t(error instanceof ApiError && error.status === 401
+          ? email ? 'errors.sessionExpired' : 'errors.credentials'
+          : error instanceof ApiError && error.status === 403
+            ? 'errors.password'
+            : error instanceof ApiError && error.status === 400
+              ? 'errors.accountFormat'
+              : 'account.deleteFailed'),
       );
     } finally {
       working.current = false;
@@ -46,10 +52,10 @@ export function AccountDeletionForm({
       onInput={() => setFeedback('')}
     >
       {email && <strong className="deletion-email">{email}</strong>}
-      <p className="deletion-note">회원탈퇴하면 계정과 저장한 덱, 카드, 복습 기록이 영구 삭제돼요.</p>
+      <p className="deletion-note">{t('account.deleteWarning')}</p>
       {!email && (
         <label>
-          가입 이메일
+          {t('account.registeredEmail')}
           <input
             type="email"
             name="email"
@@ -62,7 +68,7 @@ export function AccountDeletionForm({
         </label>
       )}
       <label>
-        비밀번호
+        {t('account.password')}
         <input
           type="password"
           name="password"
@@ -75,7 +81,7 @@ export function AccountDeletionForm({
       </label>
       <label className="deletion-confirmation">
         <input type="checkbox" name="confirm" required disabled={pending} />
-        삭제 내용을 확인했어요.
+        {t('account.confirmDelete')}
       </label>
       {feedback && (
         <p className="form-error" role="alert">
@@ -85,11 +91,11 @@ export function AccountDeletionForm({
       <div className="account-deletion-actions">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={pending}>
-            취소
+            {t('common.cancel')}
           </button>
         )}
         <button type="submit" className="account-deletion-submit" disabled={pending}>
-          <UserRoundX size={17} aria-hidden="true" /> {pending ? '삭제하는 중…' : '계정과 데이터 삭제'}
+          <UserRoundX size={17} aria-hidden="true" /> {pending ? t('cards.deleting') : t('account.deleteData')}
         </button>
       </div>
     </form>

@@ -1,3 +1,5 @@
+import { useLanguage } from '../i18n/LanguageProvider';
+import type { MessageKey } from '../i18n/messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   authenticate,
@@ -27,6 +29,12 @@ import type { CardContent, CardDraft, Deck, Rating, ReviewLog, ReviewMode } from
 type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
 
+class MissingStudyCard extends Error {
+  constructor(readonly messageKey: MessageKey) {
+    super(messageKey);
+  }
+}
+
 function mergeById<T extends { id: string }>(items: T[], updates: T[]): T[] {
   const byId = new Map(items.map((item) => [item.id, item]));
   for (const update of updates) byId.set(update.id, update);
@@ -34,6 +42,7 @@ function mergeById<T extends { id: string }>(items: T[], updates: T[]): T[] {
 }
 
 export function useStudyData() {
+  const { t } = useLanguage();
   const [guest, setGuest] = useState(readGuestStudy);
   const [connection, setConnection] = useState<Connection | null>(null);
   const [savedSession, setSavedSession] = useState(readSession);
@@ -44,7 +53,7 @@ export function useStudyData() {
   const [activityVersion, setActivityVersion] = useState(0);
   const pendingDeck = useRef<{ key: string; id: string } | undefined>(undefined);
   const pendingCards = useRef<{ key: string; ids: string[] } | undefined>(undefined);
-  const [syncError, setSyncError] = useState('');
+  const [syncError, setSyncError] = useState<MessageKey | ''>('');
   const inFlight = useRef(false);
 
   useEffect(() => {
@@ -59,7 +68,7 @@ export function useStudyData() {
         if (error instanceof ApiError && error.status === 401) {
           rememberSession(null);
           setSavedSession(null);
-          setSyncError('로그인이 만료됐어요. 다시 로그인해 주세요.');
+          setSyncError('errors.sessionExpired');
         } else {
           setRestoreError(true);
         }
@@ -99,19 +108,15 @@ export function useStudyData() {
       try {
         session = await authenticate(action, email, password);
       } catch (error) {
-        const fallback = '계정 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
-        if (error instanceof ApiError) {
-          const known =
-            error.status === 401
-              ? '이메일 또는 비밀번호를 확인해 주세요.'
-              : error.status === 409
-                ? '이미 가입된 이메일이에요.'
-                : error.status === 400
-                  ? '이메일과 비밀번호 형식을 확인해 주세요.'
-                  : fallback;
-          throw new Error(error.message || known);
-        }
-        throw new Error(fallback);
+        const status = error instanceof ApiError ? error.status : undefined;
+        const message = status === 401
+          ? 'errors.credentials'
+          : status === 409
+            ? 'errors.emailTaken'
+            : status === 400
+              ? 'errors.accountFormat'
+              : 'errors.accountServer';
+        throw new Error(t(message));
       }
 
       const local = readGuestStudy();
@@ -121,10 +126,8 @@ export function useStudyData() {
         library = await fetchStudy(session.accessToken);
       } catch {
         void endSession(session.accessToken).catch(() => undefined);
-        const signup = action === 'signup' ? '가입은 완료됐어요. 다시 로그인해 주세요. ' : '';
-        throw new Error(
-          `${signup}${local.changed ? '기록을 가져오지 못했어요. 이 기기의 기록은 보관했어요.' : '계정의 기록을 불러오지 못했어요.'}`,
-        );
+        const message = t(local.changed ? 'errors.import' : 'errors.studyRestore');
+        throw new Error(action === 'signup' ? `${t('errors.signupDone')} ${message}` : message);
       }
 
       if (local.changed) {
@@ -137,10 +140,10 @@ export function useStudyData() {
             setGuest(empty);
           } else {
             setGuest(latest);
-            if (latest.changed) setSyncError('다른 탭에서 변경된 비회원 기록은 이 기기에 보관했어요.');
+            if (latest.changed) setSyncError('errors.otherTab');
           }
         } catch {
-          setSyncError('기록은 계정에 저장됐지만, 이 기기의 비회원 기록을 비우지 못했어요.');
+          setSyncError('errors.localCleanup');
         }
       }
       rememberSession(session);
@@ -168,7 +171,7 @@ export function useStudyData() {
       await endSession(connection.session.accessToken);
       clearAccount();
     } catch {
-      throw new Error('로그아웃하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.');
+      throw new Error(t('errors.logout'));
     } finally {
       inFlight.current = false;
     }
@@ -176,7 +179,7 @@ export function useStudyData() {
 
   async function withdrawAccount(password: string) {
     if (!connection || inFlight.current) {
-      throw new Error('다시 로그인한 뒤 탈퇴를 진행해 주세요.');
+      throw new ApiError(401, 'No active session');
     }
 
     inFlight.current = true;
@@ -188,7 +191,7 @@ export function useStudyData() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         clearAccount();
-        setSyncError('로그인이 만료됐어요. 다시 로그인해 주세요.');
+        setSyncError('errors.sessionExpired');
       }
       throw error;
     } finally {
@@ -210,7 +213,7 @@ export function useStudyData() {
         setGuest(next);
         return true;
       } catch (error) {
-        setSyncError(error instanceof ApiError ? error.message : '이 기기에 학습 기록을 저장하지 못했어요.');
+        setSyncError(error instanceof MissingStudyCard ? error.messageKey : 'errors.localSave');
         return false;
       }
     }
@@ -231,13 +234,17 @@ export function useStudyData() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         clearAccount();
-        setSyncError('로그인이 만료됐어요. 다시 로그인해 주세요.');
+        setSyncError('errors.sessionExpired');
       } else {
-        setSyncError(
-          error instanceof ApiError && error.message
-            ? error.message
-            : '학습 기록을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
-        );
+        const status = error instanceof ApiError ? error.status : undefined;
+        const message = status === 404
+          ? 'errors.studyMissing'
+          : status === 409
+            ? 'errors.studyConflict'
+            : status === 400
+              ? 'errors.studyInvalid'
+              : 'errors.save';
+        setSyncError(message);
       }
       return false;
     } finally {
@@ -284,7 +291,7 @@ export function useStudyData() {
     return updateStudy(
       (data) => {
         if (!data.cards.some((card) => card.id === cardId)) {
-          throw new ApiError(404, '수정할 카드를 찾지 못했어요.');
+          throw new MissingStudyCard('errors.editMissing');
         }
         return {
           ...data,
@@ -320,7 +327,7 @@ export function useStudyData() {
       (data) => {
         if (data.logs.some((item) => item.id === id)) return data;
         if (!data.cards.some((card) => card.id === cardId)) {
-          throw new ApiError(404, '복습할 카드를 찾지 못했어요.');
+          throw new MissingStudyCard('errors.reviewMissing');
         }
         const logs = [...data.logs, log];
         if (mode !== 'scheduled') return { ...data, logs };
@@ -369,7 +376,7 @@ export function useStudyData() {
     retryRestore,
     continueAsGuest,
     saving,
-    syncError,
+    syncError: syncError && t(syncError),
     clearSyncError: () => setSyncError(''),
   };
 }

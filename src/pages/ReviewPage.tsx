@@ -1,8 +1,8 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
 import { ArrowRight, Flower2, RotateCcw, Sparkles } from 'lucide-react';
 import { Mascot, Star } from '../components/Illustrations';
 import { cardFields } from '../study/cards';
-import { ratingLabels } from '../study/review';
 import type { DeckTheme, Rating, ReviewMode, StudyCard } from '../types';
 
 export function ReviewPage({
@@ -42,8 +42,9 @@ export function ReviewPage({
   onFreeReview: () => void;
   emptyAction?: { label: string; onClick: () => void };
 }) {
+  const { t } = useLanguage();
   const [choice, setChoice] = useState<string>();
-  const title = { scheduled: '카드 복습', focus: '집중 복습', free: '자유 복습' }[mode];
+  const title = t(`review.${mode}`);
   if (finished)
     return (
       <div className="page completion">
@@ -53,28 +54,28 @@ export function ReviewPage({
           <span className="float-star two">✧</span>
           <Mascot />
         </div>
-        <h1>{mode === 'scheduled' ? '복습을 마쳤어요!' : `${title}을 마쳤어요!`}</h1>
+        <h1>{t(`review.completed.${mode}`)}</h1>
         <div className="completion-reward">
           <Flower2 size={22} />
-          <span>카드 {total}장 복습 완료</span>
+          <span>{t('review.completedCount', { count: total })}</span>
           <Sparkles size={18} />
         </div>
         <button className="big-primary" onClick={onCalendar}>
-          학습 캘린더 보기 <ArrowRight size={19} />
+          {t('review.openCalendar')} <ArrowRight size={19} />
         </button>
         <button
           className="plain-link"
           onClick={mode === 'focus' ? onStats : mode === 'free' ? onFreeReview : restart}
         >
           {
-            { focus: '학습 통계로 돌아가기', free: '자유 복습할 덱 고르기', scheduled: '남은 복습 확인하기' }[
+            { focus: t('review.backToStats'), free: t('review.freePick'), scheduled: t('review.checkRemaining') }[
               mode
             ]
           }
         </button>
         {mode === 'scheduled' && (
           <button className="plain-link" onClick={onFreeReview}>
-            자유 복습
+            {t('review.free')}
           </button>
         )}
       </div>
@@ -85,12 +86,12 @@ export function ReviewPage({
         <div className="completion-art smaller">
           <Mascot />
         </div>
-        <h1>지금 복습할 카드가 없어요.</h1>
+        <h1>{t('review.empty')}</h1>
         <button className="big-primary" onClick={emptyAction?.onClick ?? onFreeReview}>
-          {emptyAction?.label ?? '자유 복습'} <ArrowRight size={19} />
+          {emptyAction?.label ?? t('review.free')} <ArrowRight size={19} />
         </button>
         <button className="plain-link" onClick={onCalendar}>
-          학습 캘린더 보기
+          {t('review.openCalendar')}
         </button>
       </div>
     );
@@ -106,15 +107,15 @@ export function ReviewPage({
         <div style={{ width: `${((progress + 1) / total) * 100}%` }} />
       </div>
       <p className="review-instruction">
-        {current.choices ? '보기에서 정답을 골라 보세요.' : '답을 떠올린 뒤 카드를 뒤집어 보세요.'}
+        {current.choices ? t('review.pickAnswer') : t('review.thinkFirst')}
       </p>
       <button
         className={`flashcard ${theme ?? ''} ${flipped ? 'flipped' : ''}`}
         onClick={flip}
-        aria-label={flipped ? '질문 다시 보기' : '정답 확인하기'}
+        aria-label={flipped ? t('review.showQuestion') : t('review.showAnswer')}
       >
         <span className="flashcard-top">
-          <span>{flipped ? '정답' : cardFields[current.kind ?? 'basic'].label}</span>
+          <span>{flipped ? t('cards.field.correct') : t(cardFields[current.kind ?? 'basic'].label)}</span>
           <Star />
         </span>
         <div className="flashcard-content" key={flipped ? 'answer' : 'question'}>
@@ -122,11 +123,11 @@ export function ReviewPage({
           <h2>{flipped ? current.back : current.front}</h2>
         </div>
         <span className="flashcard-bottom">
-          {flipped ? '질문 다시 보기' : '눌러서 정답 보기'} <RotateCcw size={15} />
+          {flipped ? t('review.showQuestion') : t('review.tapReveal')} <RotateCcw size={15} />
         </span>
       </button>
       {current.choices && (
-        <div className="review-options" aria-label="보기">
+        <div className="review-options" aria-label={t('review.choices')}>
           {current.choices.map((option) => (
             <button
               type="button"
@@ -144,15 +145,15 @@ export function ReviewPage({
         </div>
       )}
       {flipped && choice && (
-        <p role="status">{choice === current.back ? '정답이에요!' : '선택한 답 · ' + choice}</p>
+        <p role="status">{choice === current.back ? t('review.correct') : t('review.selectedAnswer', { answer: choice })}</p>
       )}
       {!flipped ? (
         <button className="big-primary reveal-btn" onClick={flip}>
-          정답 확인하기 <ArrowRight size={19} />
+          {t('review.showAnswer')} <ArrowRight size={19} />
         </button>
       ) : (
         <div className="rating-section">
-          <p>답이 얼마나 잘 떠올랐나요?</p>
+          <p>{t('review.ratingPrompt')}</p>
           <div className="rating-grid">
             {(['again', 'hard', 'good', 'easy'] as Rating[]).map((r) => (
               <button
@@ -161,15 +162,9 @@ export function ReviewPage({
                 disabled={saving || Boolean(pendingRating && pendingRating !== r)}
                 onClick={() => rate(r)}
               >
-                <span>{ratingLabels[r]}</span>
+                <span>{t(`review.rating.${r}`)}</span>
                 <small>
-                  {r === 'again'
-                    ? '잊었어요'
-                    : r === 'hard'
-                      ? '겨우 떠올렸어요'
-                      : r === 'good'
-                        ? '떠올렸어요'
-                        : '바로 떠올렸어요'}
+                  {t(`review.hint.${r}`)}
                 </small>
               </button>
             ))}

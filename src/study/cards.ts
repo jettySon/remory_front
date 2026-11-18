@@ -1,21 +1,22 @@
+import type { Message, MessageKey } from '../i18n/messages';
 import type { CardContent, CardDraft, CardKind, StudyCard } from '../types';
 
 export const cardFields = {
-  basic: { label: '질문과 답', fields: ['질문', '답'] },
-  word: { label: '단어와 예문', fields: ['단어', '뜻', '예문'] },
-  cloze: { label: '빈칸 채우기', fields: ['문장 (빈칸은 ___로 표시)', '빈칸에 들어갈 말'] },
-  choice: { label: '객관식', fields: ['질문', '정답', '오답 1', '오답 2'] },
-} satisfies Record<CardKind, { label: string; fields: string[] }>;
+  basic: { label: 'cards.basic', fields: ['cards.field.question', 'cards.field.answer'] },
+  word: { label: 'cards.word', fields: ['cards.field.word', 'cards.field.meaning', 'cards.field.example'] },
+  cloze: { label: 'cards.cloze', fields: ['cards.field.cloze', 'cards.field.fill'] },
+  choice: { label: 'cards.choice', fields: ['cards.field.question', 'cards.field.correct', 'cards.field.wrong1', 'cards.field.wrong2'] },
+} satisfies Record<CardKind, { label: MessageKey; fields: MessageKey[] }>;
 
 export type BulkRow = { line: number; values: string[] };
 
-export function validateDraft(kind: CardKind, values: string[]): string | undefined {
+export function validateDraft(kind: CardKind, values: string[]): Message | undefined {
   const fieldCount = cardFields[kind].fields.length;
-  if (values.length !== fieldCount) return `이 카드 유형에는 열이 ${fieldCount}개 필요해요.`;
-  if (values.some((value) => !value.trim())) return '비어 있는 항목을 채워 주세요.';
-  if (kind === 'cloze' && values[0].split('___').length !== 2) return '문장에 ___를 한 번 넣어 주세요.';
+  if (values.length !== fieldCount) return ['cards.error.columns', { count: fieldCount }];
+  if (values.some((value) => !value.trim())) return ['cards.error.empty'];
+  if (kind === 'cloze' && values[0].split('___').length !== 2) return ['cards.error.cloze'];
   if (kind === 'choice' && new Set(values.slice(1).map((value) => value.trim())).size !== 3) {
-    return '정답과 오답은 서로 달라야 해요.';
+    return ['cards.error.choice'];
   }
 }
 
@@ -34,7 +35,7 @@ export function makeDraft(kind: CardKind, values: string[]): CardDraft {
   return { kind, front, back };
 }
 
-type CardEditFields = { kind: CardKind; values: string[]; labels?: string[] };
+type CardEditFields = { kind: CardKind; values: string[]; labels?: MessageKey[] };
 
 export function readCardEditFields(card: StudyCard): CardEditFields {
   if (card.kind === 'choice' || card.choices?.length) {
@@ -51,7 +52,7 @@ export function readCardEditFields(card: StudyCard): CardEditFields {
         values: [card.front, card.back.slice(0, separator), card.back.slice(separator + 2)],
       };
     }
-    return { kind: 'basic', labels: ['단어', '뜻과 예문'], values: [card.front, card.back] };
+    return { kind: 'basic', labels: ['cards.field.word', 'cards.field.meaningExample'], values: [card.front, card.back] };
   }
 
   if (card.kind === 'cloze') {
@@ -63,7 +64,7 @@ export function readCardEditFields(card: StudyCard): CardEditFields {
         return { kind: 'cloze', values: [card.front, answer] };
       }
     }
-    return { kind: 'basic', labels: ['문장', '답'], values: [card.front, card.back] };
+    return { kind: 'basic', labels: ['cards.field.sentence', 'cards.field.answer'], values: [card.front, card.back] };
   }
 
   return { kind: 'basic', values: [card.front, card.back] };

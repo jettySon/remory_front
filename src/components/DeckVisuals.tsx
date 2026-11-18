@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { BookOpen, Code2, Landmark, Languages } from 'lucide-react';
 import { Star } from './Illustrations';
 import type { Deck } from '../types';
@@ -10,6 +11,7 @@ export function DeckIcon({ icon, size = 23 }: { icon: string; size?: number }) {
 }
 
 export function DeckTile({ deck, count, onClick }: { deck: Deck; count: number; onClick: () => void }) {
+  const { t } = useLanguage();
   return (
     <button className={`deck-tile ${deck.theme}`} onClick={onClick}>
       <div className="deck-tile-art">
@@ -20,7 +22,7 @@ export function DeckTile({ deck, count, onClick }: { deck: Deck; count: number; 
       </div>
       <div>
         <strong>{deck.title}</strong>
-        <span>카드 {count}장</span>
+        <span>{t('common.cards', { count })}</span>
       </div>
     </button>
   );

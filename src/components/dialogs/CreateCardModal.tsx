@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageProvider';
 import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { CardFormFields } from './CardFormFields';
@@ -22,6 +23,7 @@ export function CreateCardModal({
   saving: boolean;
   onCreate: (deckId: string, drafts: CardDraft[]) => void;
 }) {
+  const { t } = useLanguage();
   const [deckId, setDeckId] = useState(defaultDeckId || decks[0]?.id || '');
   const deck = decks.find((item) => item.id === deckId);
   const defaultKind = (item?: Deck) => deckKinds.find((type) => type.icon === item?.icon)?.card ?? 'basic';
@@ -49,7 +51,7 @@ export function CreateCardModal({
     for (const entry of entries) {
       const issue = validateDraft(kind, entry.values);
       if (issue) {
-        setError(bulk ? `${entry.line}번째 줄 · ${issue}` : issue);
+        setError(bulk ? t('import.pasteRow', { line: entry.line, error: t(...issue) }) : t(...issue));
         return;
       }
     }
@@ -60,10 +62,10 @@ export function CreateCardModal({
       );
   };
   return (
-    <Modal title="카드 추가" onClose={onClose}>
+    <Modal title={t('cards.add')} onClose={onClose}>
       <form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
         <SelectField
-          label="학습 덱"
+          label={t('nav.decks')}
           value={deckId}
           options={decks.map((item) => ({ value: item.id, label: item.title }))}
           onChange={(id) => {
@@ -81,7 +83,7 @@ export function CreateCardModal({
               setError('');
             }}
           >
-            직접 입력
+            {t('import.manual')}
           </button>
           <button
             type="button"
@@ -91,15 +93,15 @@ export function CreateCardModal({
               setError('');
             }}
           >
-            일괄 등록
+            {t('import.bulk')}
           </button>
         </div>
         <SelectField
-          label="카드 유형"
+          label={t('cards.type')}
           value={kind}
           options={(Object.keys(cardFields) as CardKind[]).map((type) => ({
             value: type,
-            label: cardFields[type].label,
+            label: t(cardFields[type].label),
           }))}
           onChange={(type) => {
             setKind(type);
@@ -108,7 +110,7 @@ export function CreateCardModal({
         />
         {bulk ? (
           <div className="bulk-field">
-            <div className="entry-modes bulk-sources" role="group" aria-label="가져오기 방식">
+            <div className="entry-modes bulk-sources" role="group" aria-label={t('import.method')}>
               <button
                 type="button"
                 aria-pressed={!excel}
@@ -117,7 +119,7 @@ export function CreateCardModal({
                   setError('');
                 }}
               >
-                붙여넣기
+                {t('import.paste')}
               </button>
               <button
                 type="button"
@@ -127,18 +129,18 @@ export function CreateCardModal({
                   setError('');
                 }}
               >
-                엑셀 파일
+                {t('import.excel')}
               </button>
             </div>
             {excel ? (
               <ExcelImportFields kind={kind} excelImport={excelImport} />
             ) : (
               <>
-                <label htmlFor="bulk-cards">스프레드시트에서 붙여넣기</label>
+                <label htmlFor="bulk-cards">{t('import.fromSheet')}</label>
                 <div id="bulk-cards-hint" className="field-hint">
-                  <span>열 제목을 빼고 복사해 주세요. 한 줄에 카드 한 장씩, 각 항목은 탭으로 구분해요.</span>
+                  <span>{t('import.pasteHint')}</span>
                   <span>
-                    <strong>열 순서</strong> {fields.join(' → ')}
+                    <strong>{t('import.order')}</strong> {fields.map((field) => t(field)).join(' → ')}
                   </span>
                 </div>
                 <textarea
@@ -168,7 +170,7 @@ export function CreateCardModal({
             (bulk && (!rows.length || (excel && Boolean(reading || fileError || excelRowError))))
           }
         >
-          {bulk ? `${excel && excelRowError ? 0 : rows.length}장 등록하기` : '카드 저장'}{' '}
+          {bulk ? t('import.submit', { count: excel && excelRowError ? 0 : rows.length }) : t('cards.save')}{' '}
           <ArrowRight size={18} />
         </button>
       </form>

@@ -103,6 +103,7 @@ button { border: 0; }
   flex-direction: column;
   align-items: flex-start;
   gap: 19px;
+  max-inline-size: min(65%, 230px);
 }
 .hero .hero-content h1 {
   margin: 0;
@@ -121,8 +122,9 @@ button { border: 0; }
   font-weight: 560;
   line-height: 1.55;
   letter-spacing: -.02em;
-  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
+.hero .hero-content p:lang(ko) { word-break: keep-all; }
 .hero-scene {
   position: absolute;
   right: -8px;
@@ -345,7 +347,7 @@ button { border: 0; }
 @keyframes modal-sheet-out { to { opacity: 0; translate: 0 10px; } }
 .sheet-handle{width:43px;height:5px;border-radius:4px;background:#e7dce9;margin:3px auto 22px;}.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:21px;}.modal-head h2{margin:0;font-size:20px;color:#534263;letter-spacing:-.055em;}.icon-button{display:grid;place-items:center;background:#f4ebf6;border-radius:50%;height:32px;width:32px;color:#8b7598;}
 .sheet-form{display:flex;flex-direction:column;gap:18px;}.sheet-form :is(label,.form-label){display:flex;flex-direction:column;gap:8px;color:var(--field-label);font-size:13px;font-weight:700;line-height:1.45;}.sheet-form input::placeholder,.sheet-form textarea::placeholder{color:#c2b4c6;}.color-choices{display:flex;gap:12px;}.color-choice{height:44px;width:44px;border-radius:16px;display:grid;place-items:center;color:#786487;}.color-choice.lavender{background:#e7ddf9;}.color-choice.peach{background:#f9dfe5;}.color-choice.butter{background:#fff0d3;}.color-choice.blue{background:#dfeafa;}.color-choice.picked{outline:2px solid #8b72aa;outline-offset:3px;}.form-submit{margin:9px 0 8px;}.preview-toggle{display:flex;align-items:center;justify-content:center;gap:7px;background:#f6edf8;color:#8c72a0;font-size:11px;border-radius:14px;padding:12px;}.mini-preview{background:#f7effb;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;}.mini-preview small{color:#a895b3;font-size:9px;letter-spacing:.1em;}.mini-preview strong{font-size:13px;color:#5f4e70;}.mini-preview p{font-size:12px;color:#8d7999;white-space:pre-wrap;line-height:1.7;}
-.toast{animation:page-in var(--motion-page) var(--motion-ease-out);position:fixed;z-index:25;bottom:calc(30px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);white-space:nowrap;background:#695383;color:white;border-radius:99px;padding:13px 18px;display:flex;align-items:center;gap:8px;font-size:12px;box-shadow:0 10px 28px #66507955;}
+.toast{animation:page-in var(--motion-page) var(--motion-ease-out);position:fixed;z-index:25;bottom:calc(30px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:min(calc(100% - 32px), 420px);overflow-wrap:anywhere;background:#695383;color:white;border-radius:99px;padding:13px 18px;display:flex;align-items:center;gap:8px;font-size:12px;box-shadow:0 10px 28px #66507955;}
 @media (max-width:1050px){.site-background{gap:20px;padding-right:6vw;}.desktop-decoration{max-width:350px;}.desktop-copy h2{font-size:45px;}}
 @media (max-width:760px){
  .site-background{display:block;padding:0;min-height:100dvh;background:#fffafc;}
@@ -565,7 +567,7 @@ button { border: 0; }
 }
 [data-theme="dark"] .month-heading button { background: #514069; color: #f4e4ff; }
 
-.sheet-form, .stats-page {
+.sheet-form, .stats-page, .language-setting {
   --field-label: #6c587c;
   --field-ink: #594968;
   --field-hint: #75647e;
@@ -576,7 +578,7 @@ button { border: 0; }
   --field-focus: #9e7fbd;
   --menu-shadow: #50366129;
 }
-[data-theme="dark"] :is(.sheet-form, .stats-page) {
+[data-theme="dark"] :is(.sheet-form, .stats-page, .language-setting) {
   --field-label: #ede0f2;
   --field-ink: #f5eafa;
   --field-hint: #c6b4d0;
@@ -865,8 +867,8 @@ button { border: 0; }
 .stats-page .stat-block > span, .stats-page .stat-block small { color: var(--field-hint); }
 .stats-page .stat-block strong { color: var(--field-ink); font-size: 27px; }
 .stats-filters { display: grid; gap: 12px; }
-.stats-filters label { color: var(--field-label); font-size: 13px; font-weight: 700; }
-.stats-filters .select-trigger {
+:is(.stats-filters, .language-setting) label { color: var(--field-label); font-size: 13px; font-weight: 700; }
+:is(.stats-filters, .language-setting) .select-trigger {
   width: 100%;
   min-height: 45px;
   padding: 10px 12px;
@@ -1107,6 +1109,8 @@ button { border: 0; }
   color: var(--accent);
   background: #eee4f7;
 }
+.language-setting { flex: 1; min-width: 0; }
+.deletion-language { margin-bottom: 16px; }
 .settings-option-label {
   flex: 1;
   font-size: 14px;

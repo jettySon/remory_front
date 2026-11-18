@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageProvider';
 import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { makeCardEdit, readCardEditFields, validateDraft } from '../../study/cards';
@@ -18,6 +19,7 @@ export function EditCardModal({
   onClose: () => void;
   onSave: (content: CardContent) => void;
 }) {
+  const { t } = useLanguage();
   const [{ kind, labels, values: original }] = useState(() => readCardEditFields(card));
   const [values, setValues] = useState(original);
   const [error, setError] = useState('');
@@ -27,14 +29,14 @@ export function EditCardModal({
     if (saving) return;
     const issue = validateDraft(kind, values);
     if (issue) {
-      setError(issue);
+      setError(t(...issue));
       return;
     }
     onSave(makeCardEdit(card, kind, values));
   }
 
   return (
-    <Modal title="카드 수정" onClose={onClose}>
+    <Modal title={t('cards.edit')} onClose={onClose}>
       <form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
         <CardFormFields
           kind={kind}
@@ -50,7 +52,7 @@ export function EditCardModal({
           </p>
         )}
         <button className="big-primary form-submit" type="submit" disabled={saving}>
-          {saving ? '저장하는 중…' : '변경사항 저장'} <ArrowRight size={18} aria-hidden="true" />
+          {saving ? t('cards.saving') : t('cards.saveChanges')} <ArrowRight size={18} aria-hidden="true" />
         </button>
       </form>
     </Modal>

@@ -1,13 +1,14 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { reviewRatings, type RatingCounts } from '../study/insights';
-import { ratingLabels } from '../study/review';
 
 export function RatingLegend() {
+  const { t } = useLanguage();
   return (
-    <ul className="rating-legend" aria-label="평가 범례">
+    <ul className="rating-legend" aria-label={t('stats.ratingLegend')}>
       {reviewRatings.map((rating) => (
         <li key={rating}>
           <i className={`rating-segment ${rating}`} />
-          {ratingLabels[rating]}
+          {t(`review.rating.${rating}`)}
         </li>
       ))}
     </ul>
@@ -15,7 +16,10 @@ export function RatingLegend() {
 }
 
 export function RatingChart({ counts, vertical = false }: { counts: RatingCounts; vertical?: boolean }) {
-  const label = reviewRatings.map((rating) => `${ratingLabels[rating]} ${counts[rating]}회`).join(', ');
+  const { t, locale } = useLanguage();
+  const label = new Intl.ListFormat(locale).format(
+    reviewRatings.map((rating) => t('stats.ratingCount', { rating: t(`review.rating.${rating}`), count: counts[rating] })),
+  );
   return (
     <div className={`rating-chart ${vertical ? 'vertical' : ''}`} role="img" aria-label={label} title={label}>
       {reviewRatings.map(

@@ -1,4 +1,6 @@
-import { ChevronRight, Moon, UserRoundX } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageProvider';
+import { ChevronRight, Languages, Moon, UserRoundX } from 'lucide-react';
+import { LanguageField } from '../LanguageField';
 import { Modal } from '../Modal';
 
 export function SettingsModal({
@@ -12,8 +14,9 @@ export function SettingsModal({
   onWithdraw?: () => void;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   return (
-    <Modal title="설정" onClose={onClose}>
+    <Modal title={t('settings.title')} onClose={onClose}>
       <div className="settings-options">
         <button
           className="settings-option"
@@ -26,15 +29,21 @@ export function SettingsModal({
           <span className="settings-option-icon" aria-hidden="true">
             <Moon size={19} />
           </span>
-          <span className="settings-option-label">다크 모드</span>
+          <span className="settings-option-label">{t('settings.dark')}</span>
           <span className="settings-switch" aria-hidden="true" />
         </button>
+        <div className="settings-option settings-language">
+          <span className="settings-option-icon" aria-hidden="true">
+            <Languages size={19} />
+          </span>
+          <LanguageField />
+        </div>
         {onWithdraw && (
           <button className="settings-option settings-withdraw" type="button" onClick={onWithdraw}>
             <span className="settings-option-icon" aria-hidden="true">
               <UserRoundX size={19} />
             </span>
-            <span className="settings-option-label">회원탈퇴</span>
+            <span className="settings-option-label">{t('account.delete')}</span>
             <ChevronRight size={18} aria-hidden="true" />
           </button>
         )}

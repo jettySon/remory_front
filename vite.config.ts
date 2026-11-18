@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: { navigateFallbackDenylist: [/^\/account-deletion(?:\/|$)/] },
-      includeAssets: ['mascot.svg', 'garden.svg', 'icon.svg', 'templates/*.xlsx'],
+      includeAssets: ['mascot.svg', 'garden.svg', 'icon.svg', 'templates/**/*.xlsx'],
       manifest: {
         name: 'Remory — 기억이 피어나는 곳',
         short_name: 'Remory',

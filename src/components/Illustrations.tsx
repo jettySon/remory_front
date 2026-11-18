@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 export function Star({ className = '' }: { className?: string }) {
   return (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -7,5 +8,6 @@ export function Star({ className = '' }: { className?: string }) {
 }
 
 export function Mascot({ className = '' }: { className?: string }) {
-  return <img src="/mascot.svg" className={`mascot ${className}`} alt="구름새 몽이" draggable={false} />;
+  const { t } = useLanguage();
+  return <img src="/mascot.svg" className={`mascot ${className}`} alt={t('common.mascot')} draggable={false} />;
 }

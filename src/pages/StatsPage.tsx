@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronRight } from 'lucide-react';
 import { Mascot } from '../components/Illustrations';
@@ -12,9 +13,9 @@ import type { Deck, ReviewLog, StudyCard } from '../types';
 export type StatsFilters = { period: 'all' | '7' | '30'; deckId: string | null };
 
 const periods = [
-  { value: 'all', label: '전체 기간' },
-  { value: '7', label: '최근 7일' },
-  { value: '30', label: '최근 30일' },
+  { value: 'all', label: 'stats.allTime' },
+  { value: '7', label: 'stats.last7' },
+  { value: '30', label: 'stats.last30' },
 ] as const;
 
 export function StatsPage({
@@ -40,6 +41,7 @@ export function StatsPage({
   onFilterChange: (filters: StatsFilters) => void;
   back: () => void;
 }) {
+  const { locale, t } = useLanguage();
   const { period, deckId } = filters;
   const [showAll, setShowAll] = useState(false);
   const selectedDeck = decks.find((deck) => deck.id === deckId);
@@ -72,6 +74,8 @@ export function StatsPage({
   const visibleCards = showAll ? missedCards : missedCards.slice(0, 5);
   const deckNames = new Map(decks.map((deck) => [deck.id, deck.title]));
   const week = token ? weekWithCounts(report?.week) : getReviewWeek(logs, cards, selectedDeck?.id);
+  const chartDate = new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric' });
+  const percent = new Intl.NumberFormat(locale, { style: 'percent' });
   const max = Math.max(...week.map((day) => day.counts.total), 1);
   const repeated = missedCards.filter((item) => item.again >= 2).length;
   const recovered = missedCards.filter(
@@ -85,29 +89,29 @@ export function StatsPage({
   return (
     <div className="page stats-page">
       <button className="back-link stats-back" onClick={back}>
-        <ArrowLeft size={18} /> 홈으로
+        <ArrowLeft size={18} /> {t('stats.goHome')}
       </button>
-      <h1>학습 통계</h1>
+      <h1>{t('stats.title')}</h1>
       <div className="stat-grid">
         <div className="stat-block lavender">
-          <span>전체 카드</span>
+          <span>{t('stats.totalCards')}</span>
           <strong>
             {cards.length}
-            <small>장</small>
+            <small>{t('common.cardUnit')}</small>
           </strong>
         </div>
         <div className="stat-block peach">
-          <span>누적 복습</span>
+          <span>{t('stats.totalReviews')}</span>
           <strong>
             {totalReviews ?? '—'}
-            <small>회</small>
+            <small>{t('common.reviewUnit')}</small>
           </strong>
-          {freeReviews > 0 && <small>자유 복습 {freeReviews}회 포함</small>}
+          {freeReviews > 0 && <small>{t('stats.includesFree', { count: freeReviews })}</small>}
         </div>
       </div>
 
       <div className="stats-filters">
-        <div className="stats-period" role="group" aria-label="집계 기간">
+        <div className="stats-period" role="group" aria-label={t('stats.period')}>
           {periods.map(({ value, label }) => (
             <button
               key={value}
@@ -115,15 +119,15 @@ export function StatsPage({
               aria-pressed={period === value}
               onClick={() => changeFilters({ period: value, deckId })}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
         <SelectField
-          label="학습 덱"
+          label={t('nav.decks')}
           value={selectedDeck?.id ?? ''}
           options={[
-            { value: '', label: '전체 덱' },
+            { value: '', label: t('decks.all') },
             ...decks.map((deck) => ({ value: deck.id, label: deck.title })),
           ]}
           onChange={(id) => changeFilters({ period, deckId: id || null })}
@@ -132,29 +136,29 @@ export function StatsPage({
 
       {remote.loading && (
         <p role="status" className="stats-surface insight-empty">
-          학습 통계를 불러오는 중이에요.
+          {t('stats.loading')}
         </p>
       )}
       {remote.failed && (
         <div className="stats-surface insight-empty">
-          <p role="alert">학습 통계를 불러오지 못했어요.</p>
+          <p role="alert">{t('stats.failed')}</p>
           <button type="button" className="plain-link" onClick={remote.retry}>
-            다시 불러오기
+            {t('common.retry')}
           </button>
         </div>
       )}
       {(!token || report) && (
         <>
           <section className="stats-section" aria-labelledby="stats-practice-title">
-            <h2 id="stats-practice-title">집중 복습</h2>
+            <h2 id="stats-practice-title">{t('review.focus')}</h2>
             <div className="practice-feature">
               <div className="practice-feature-copy">
-                <span>{selectedDeck?.title ?? '전체 덱'}</span>
+                <span>{selectedDeck?.title ?? t('decks.all')}</span>
                 <p>
-                  다시 볼 카드{' '}
+                  {t('stats.missed')}{' '}
                   <strong>
                     {missedCards.length}
-                    <small>장</small>
+                    <small>{t('common.cardUnit')}</small>
                   </strong>
                 </p>
               </div>
@@ -165,13 +169,13 @@ export function StatsPage({
                   type="button"
                   onClick={() => startPractice(missedCards.map((item) => item.card.id))}
                 >
-                  집중 복습 시작 <ArrowRight size={17} aria-hidden="true" />
+                  {t('stats.focusStart')} <ArrowRight size={17} aria-hidden="true" />
                 </button>
               ) : (
                 <p className="insight-empty">
                   {insights.decks.length
-                    ? '아직 다시 볼 카드가 없어요.'
-                    : '복습하면 다시 볼 카드가 여기에 모여요.'}
+                    ? t('stats.noMissed')
+                    : t('stats.missedHint')}
                 </p>
               )}
             </div>
@@ -179,31 +183,30 @@ export function StatsPage({
               <>
                 <div className="practice-summary">
                   <div>
-                    <strong>{repeated}장</strong>
-                    <span>‘다시’ 2회 이상</span>
+                    <strong>{t('common.cards', { count: repeated })}</strong>
+                    <span>{t('stats.againTwice')}</span>
                   </div>
                   <div>
-                    <strong>{recovered}장</strong>
-                    <span>마지막 평가가 보통·쉬움</span>
+                    <strong>{t('common.cards', { count: recovered })}</strong>
+                    <span>{t('stats.lastRecovered')}</span>
                   </div>
                 </div>
                 <p className="insight-guide">
-                  ‘다시’를 많이 고른 카드부터 복습해요. 집중 복습 결과는 통계에 기록되며 기존 복습 일정은
-                  유지돼요.
+                  {t('stats.focusHint')}
                 </p>
               </>
             )}
           </section>
 
           <section className="stats-section" aria-labelledby="stats-trend-title">
-            <h2 id="stats-trend-title">최근 7일 복습 추세</h2>
+            <h2 id="stats-trend-title">{t('stats.weekTrend')}</h2>
             <div className="stats-surface stats-trend">
               <div className="stats-chart-heading">
-                <strong>{selectedDeck?.title ?? '전체 덱'}</strong>
-                <span>복습 {week.reduce((sum, day) => sum + day.counts.total, 0)}회</span>
+                <strong>{selectedDeck?.title ?? t('decks.all')}</strong>
+                <span>{t('common.reviews', { count: week.reduce((sum, day) => sum + day.counts.total, 0) })}</span>
               </div>
               <div className="bar-chart rating-trend">
-                {week.map(({ key, label, counts }) => (
+                {week.map(({ key, date, counts }) => (
                   <div className="bar-col" key={key}>
                     <span>{counts.total}</span>
                     <div className="bar-container">
@@ -213,7 +216,7 @@ export function StatsPage({
                         </div>
                       )}
                     </div>
-                    <span>{label}</span>
+                    <span>{chartDate.format(date)}</span>
                   </div>
                 ))}
               </div>
@@ -222,9 +225,9 @@ export function StatsPage({
           </section>
 
           <section className="stats-section" aria-labelledby="stats-decks-title">
-            <h2 id="stats-decks-title">덱별 평가 분포</h2>
+            <h2 id="stats-decks-title">{t('stats.deckDistribution')}</h2>
             {insights.decks.length === 0 ? (
-              <p className="stats-surface insight-empty">선택한 기간에 복습 기록이 없어요.</p>
+              <p className="stats-surface insight-empty">{t('stats.noPeriodReview')}</p>
             ) : (
               <ul className="insight-list">
                 {insights.decks.map(({ deck, ...counts }) => (
@@ -246,12 +249,12 @@ export function StatsPage({
                       <span className="stats-deck-text">
                         <strong>{deck.title}</strong>
                         <small>
-                          다시 {counts.again}회 / 전체 {counts.total}회
-                          {counts.hard > 0 && ` · 어려움 ${counts.hard}회`}
+                          {t('stats.againTotal', { again: counts.again, total: counts.total })}
+                          {counts.hard > 0 && ` · ${t('stats.hardCount', { count: counts.hard })}`}
                         </small>
                       </span>
                       <span className="insight-rate">
-                        {Math.round((counts.again / counts.total) * 100)}%<small>다시 비율</small>
+                        {percent.format(counts.again / counts.total)}<small>{t('stats.againRate')}</small>
                       </span>
                     </button>
                     <RatingChart counts={counts} />
@@ -263,20 +266,20 @@ export function StatsPage({
 
           {missedCards.length > 0 && (
             <section className="stats-section" aria-labelledby="stats-missed-title">
-              <h2 id="stats-missed-title">다시 볼 카드</h2>
+              <h2 id="stats-missed-title">{t('stats.missed')}</h2>
               <ol className="insight-list">
                 {visibleCards.map(({ card, total, again, hard }) => (
                   <li className="insight-card stats-surface" key={card.id}>
                     <span className="insight-deck-name">{deckNames.get(card.deckId)}</span>
                     <strong>{card.front}</strong>
                     <span>
-                      다시 {again}회 / 전체 {total}회{hard > 0 && ` · 어려움 ${hard}회`}
+                      {t('stats.againTotal', { again, total })}{hard > 0 && ` · ${t('stats.hardCount', { count: hard })}`}
                     </span>
                     <details>
-                      <summary>정답 보기</summary>
+                      <summary>{t('stats.answer')}</summary>
                       <p>{card.back}</p>
                       <button type="button" onClick={() => openDeck(card.deckId)}>
-                        덱 열기 <ChevronRight size={14} aria-hidden="true" />
+                        {t('decks.open')} <ChevronRight size={14} aria-hidden="true" />
                       </button>
                     </details>
                   </li>
@@ -284,7 +287,7 @@ export function StatsPage({
               </ol>
               {missedCards.length > 5 && (
                 <button className="insight-more" type="button" onClick={() => setShowAll(!showAll)}>
-                  {showAll ? '상위 5장만 보기' : `카드 ${missedCards.length}장 모두 보기`}
+                  {showAll ? t('stats.top5') : t('stats.allMissed', { count: missedCards.length })}
                 </button>
               )}
             </section>

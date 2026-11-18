@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
+import { useLanguage } from '../i18n/LanguageProvider';
+import { languages, translators, type MessageKey } from '../i18n/messages';
 import type { CellValue, Sheet } from 'read-excel-file/browser';
 import { cardFields, validateDraft, type BulkRow } from '../study/cards';
 import type { CardKind } from '../types';
@@ -9,19 +11,22 @@ function readCellText(cell: CellValue | null): string {
 }
 
 export function useExcelImport(kind: CardKind) {
+  const { t } = useLanguage();
   const fields = cardFields[kind].fields;
   const [workbook, setWorkbook] = useState<Sheet[]>([]);
   const [sheetName, setSheetName] = useState('');
   const [headerOverride, setHeaderOverride] = useState<boolean | null>(null);
   const [reading, setReading] = useState(false);
-  const [fileError, setFileError] = useState('');
+  const [fileError, setFileError] = useState<MessageKey | ''>('');
   const [fileName, setFileName] = useState('');
   const readRequest = useRef(0);
   const sheet = workbook.find((item) => item.sheet === sheetName);
   const firstRow = sheet?.data[0];
   const hasMatchingHeader =
     firstRow !== undefined &&
-    fields.every((field, index) => readCellText(firstRow[index] ?? null) === field) &&
+    languages.some(({ value }) =>
+      fields.every((field, index) => readCellText(firstRow[index] ?? null) === translators[value](field)),
+    ) &&
     firstRow.slice(fields.length).every((cell) => !readCellText(cell));
   const skipHeader = headerOverride ?? hasMatchingHeader;
   const excelRows = useMemo(() => {
@@ -37,10 +42,10 @@ export function useExcelImport(kind: CardKind) {
   const excelRowError = useMemo(() => {
     for (const row of excelRows) {
       const issue = validateDraft(kind, row.values);
-      if (issue) return `${row.line}행 · ${issue}`;
+      if (issue) return t('import.excelRow', { line: row.line, error: t(...issue) });
     }
     return '';
-  }, [excelRows, kind]);
+  }, [excelRows, kind, t]);
 
   async function loadWorkbook(file?: File) {
     const request = ++readRequest.current;
@@ -51,7 +56,7 @@ export function useExcelImport(kind: CardKind) {
     setHeaderOverride(null);
     if (!file || !/\.xlsx$/i.test(file.name)) {
       setReading(false);
-      if (file) setFileError('.xlsx 형식의 엑셀 파일을 선택해 주세요.');
+      if (file) setFileError('import.wrongFile');
       return;
     }
 
@@ -62,10 +67,10 @@ export function useExcelImport(kind: CardKind) {
       if (request !== readRequest.current) return;
       setWorkbook(sheets);
       setSheetName(sheets[0]?.sheet ?? '');
-      if (!sheets.length) setFileError('가져올 수 있는 시트가 없어요.');
+      if (!sheets.length) setFileError('import.noSheets');
     } catch {
       if (request === readRequest.current)
-        setFileError('파일을 읽지 못했어요. 엑셀에서 열리는지 확인한 뒤 다시 선택해 주세요.');
+        setFileError('import.readFailed');
     } finally {
       if (request === readRequest.current) setReading(false);
     }
@@ -83,7 +88,7 @@ export function useExcelImport(kind: CardKind) {
     skipHeader,
     excelRows,
     reading,
-    fileError,
+    fileError: fileError && t(fileError),
     fileName,
     excelRowError,
     loadWorkbook,

@@ -1,3 +1,5 @@
+import { useLanguage } from '../../i18n/LanguageProvider';
+import type { MessageKey } from '../../i18n/messages';
 import { cardFields } from '../../study/cards';
 import type { CardKind, DeckTheme } from '../../types';
 
@@ -13,14 +15,15 @@ export function CardFormFields({
   values: string[];
   onChange: (values: string[]) => void;
   theme?: DeckTheme;
-  labels?: string[];
+  labels?: MessageKey[];
   saving?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <>
       {labels.map((label, index) => (
         <label key={label}>
-          {label}
+          {t(label)}
           <textarea
             required
             disabled={saving}
@@ -36,7 +39,7 @@ export function CardFormFields({
       ))}
       {values.some((value) => value?.trim()) && (
         <div className={`mini-preview ${theme ?? ''}`}>
-          <small>미리보기 · {cardFields[kind].label}</small>
+          <small>{t('cards.preview', { type: t(cardFields[kind].label) })}</small>
           <strong>{values[0]}</strong>
           {kind === 'choice' && <p>{values.slice(1, 4).filter(Boolean).join(' · ')}</p>}
           <p>{kind === 'cloze' ? values[0]?.replace('___', () => values[1] || '___') : values[1]}</p>

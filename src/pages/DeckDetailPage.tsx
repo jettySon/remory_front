@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronRight, Cloud, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { DeckIcon } from '../components/DeckVisuals';
@@ -6,8 +7,6 @@ import { cardFields } from '../study/cards';
 import { deckKinds } from '../study/decks';
 import { isDue } from '../study/review';
 import type { Deck, StudyCard } from '../types';
-
-const reviewDate = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
 
 export function DeckDetailPage({
   deck,
@@ -28,11 +27,13 @@ export function DeckDetailPage({
   onStudy: () => void;
   onFreeReview: () => void;
 }) {
+  const { locale, t } = useLanguage();
+  const reviewDate = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <div className="page">
       <button className="back-link" onClick={back}>
-        <ArrowLeft size={19} /> 학습 덱
+        <ArrowLeft size={19} /> {t('nav.decks')}
       </button>
       <div className={`deck-detail-banner ${deck.theme}`}>
         <span className="detail-mini-art">
@@ -40,14 +41,14 @@ export function DeckDetailPage({
         </span>
         <span className="detail-spark">✦</span>
         <span className="eyebrow-dark">
-          {deckKinds.find((kind) => kind.icon === deck.icon)?.label ?? '일반'}
+          {t(deckKinds.find((kind) => kind.icon === deck.icon)?.label ?? 'decks.kind.book')}
         </span>
         <h1>{deck.title}</h1>
         {deck.subtitle && <p>{deck.subtitle}</p>}
         <div className="detail-foot">
-          <span>카드 {cards.length}장</span>
+          <span>{t('common.cards', { count: cards.length })}</span>
           <button onClick={onStudy}>
-            복습하기 <ArrowRight size={17} />
+            {t('review.start')} <ArrowRight size={17} />
           </button>
         </div>
       </div>
@@ -55,13 +56,13 @@ export function DeckDetailPage({
         <button className="free-deck-action" type="button" onClick={onFreeReview}>
           <RotateCcw size={18} aria-hidden="true" />
           <span>
-            <strong>자유 복습</strong>
-            <small>이 덱의 카드 {cards.length}장 다시 보기</small>
+            <strong>{t('review.free')}</strong>
+            <small>{t('decks.reviewAll', { count: cards.length })}</small>
           </span>
           <ArrowRight size={17} aria-hidden="true" />
         </button>
       )}
-      <SectionHeading title="카드 목록" />
+      <SectionHeading title={t('cards.list')} />
       <div className="card-list">
         {cards.map((card, i) => (
           <div className="card-list-item" key={card.id}>
@@ -73,18 +74,18 @@ export function DeckDetailPage({
             >
               <span className="list-index">{String(i + 1).padStart(2, '0')}</span>
               <span className="list-card-content">
-                <small>{cardFields[card.kind ?? 'basic'].label}</small>
+                <small>{t(cardFields[card.kind ?? 'basic'].label)}</small>
                 <strong>{card.front}</strong>
                 {expanded === card.id && (
                   <>
                     <small>{card.back}</small>
-                    {Boolean(card.choices?.length) && <small>보기 · {card.choices?.join(' · ')}</small>}
+                    {Boolean(card.choices?.length) && <small>{t('review.choices')} · {card.choices?.join(' · ')}</small>}
                     <small>
                       {isDue(card) ? (
-                        '지금 복습할 수 있어요'
+                        t('review.dueNow')
                       ) : (
                         <>
-                          다음 복습 ·{' '}
+                          {t('review.next')} ·{' '}
                           <time dateTime={card.dueAt}>{reviewDate.format(new Date(card.dueAt))}</time>
                         </>
                       )}
@@ -97,10 +98,10 @@ export function DeckDetailPage({
             {expanded === card.id && (
               <div className="card-list-actions">
                 <button type="button" onClick={() => onEdit(card.id)}>
-                  <Pencil size={15} aria-hidden="true" /> 수정
+                  <Pencil size={15} aria-hidden="true" /> {t('common.edit')}
                 </button>
                 <button className="card-remove-action" type="button" onClick={() => onDelete(card.id)}>
-                  <Trash2 size={15} aria-hidden="true" /> 삭제
+                  <Trash2 size={15} aria-hidden="true" /> {t('common.delete')}
                 </button>
               </div>
             )}
@@ -110,14 +111,14 @@ export function DeckDetailPage({
       {cards.length === 0 && (
         <div className="empty-state">
           <Cloud size={45} />
-          <p>아직 카드가 없어요.</p>
+          <p>{t('cards.empty')}</p>
         </div>
       )}
       <button className="soft-create" onClick={onAdd}>
         <span>
           <Plus size={20} />
         </span>
-        카드 추가 <ArrowRight size={18} />
+        {t('cards.add')} <ArrowRight size={18} />
       </button>
     </div>
   );

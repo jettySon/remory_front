@@ -1,3 +1,5 @@
+import { useLanguage } from './i18n/LanguageProvider';
+import type { Message } from './i18n/messages';
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 import { AppHeader, BottomNav } from './components/Navigation';
@@ -36,6 +38,7 @@ type AppModal =
   | { type: 'edit-card' | 'delete-card'; cardId: string };
 
 export default function App() {
+  const { t } = useLanguage();
   const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
   const [page, setPage] = useState<Page>('home');
   const [openDeckId, setOpenDeckId] = useState<string>();
@@ -45,7 +48,7 @@ export default function App() {
     closing: boolean;
   } | null>(null);
   const modal = modalState?.dialog;
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<Message | null>(null);
   const [statsFilters, setStatsFilters] = useState<StatsFilters>({ period: 'all', deckId: null });
   const accountTrigger = useRef<HTMLButtonElement>(null);
   const settingsTrigger = useRef<HTMLButtonElement>(null);
@@ -73,7 +76,7 @@ export default function App() {
 
   useEffect(() => {
     if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(''), 2800);
+    const timer = window.setTimeout(() => setNotice(null), 2800);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
@@ -99,20 +102,20 @@ export default function App() {
   async function connectAccount(action: AccountAction, email: string, password: string) {
     const imported = await study.connect(action, email, password);
     afterAccountChange();
-    if (imported) setNotice('이 기기의 학습 기록을 계정에 가져왔어요.');
-    else setNotice(action === 'signup' ? '가입이 완료됐어요.' : '계정에 로그인했어요.');
+    if (imported) setNotice(['account.imported']);
+    else setNotice([action === 'signup' ? 'account.signedUp' : 'account.loggedIn']);
   }
 
   async function logout() {
     await study.disconnect();
     afterAccountChange();
-    setNotice('로그아웃했어요.');
+    setNotice(['account.loggedOut']);
   }
 
   async function withdrawAccount(password: string) {
     await study.withdrawAccount(password);
     closeSettings();
-    setNotice('회원탈퇴가 완료됐어요.');
+    setNotice(['account.deleteSuccess']);
   }
 
   function setModal(next: AppModal | null) {
@@ -176,7 +179,7 @@ export default function App() {
     setModal(null);
     setOpenDeckId(id);
     setPage('deck-detail');
-    setNotice('덱을 만들었어요.');
+    setNotice(['decks.created']);
   }
 
   async function addCards(deckId: string, drafts: CardDraft[]) {
@@ -184,19 +187,19 @@ export default function App() {
     setModal(null);
     setOpenDeckId(deckId);
     setPage('deck-detail');
-    setNotice(`카드 ${drafts.length}장을 추가했어요.`);
+    setNotice(['cards.added', { count: drafts.length }]);
   }
 
   async function editCard(cardId: string, content: CardContent) {
     if (!(await study.editCard(cardId, content))) return;
     setModal(null);
-    setNotice('카드를 수정했어요.');
+    setNotice(['cards.edited']);
   }
 
   async function deleteCard(cardId: string) {
     if (!(await study.deleteCard(cardId))) return;
     setModal(null);
-    setNotice('카드를 삭제했어요.');
+    setNotice(['cards.deleted']);
   }
 
   function openSettings(trigger: HTMLButtonElement) {
@@ -228,31 +231,31 @@ export default function App() {
         <div className="desktop-copy">
           <span>DREAMY MEMORY GARDEN</span>
           <h2>
-            작은 기억이
+            {t('app.desktopFirst')}
             <br />
-            <em>꽃이 되는 곳.</em>
+            <em>{t('app.desktopSecond')}</em>
           </h2>
           <p>
-            잊기 전에 다시 떠올리고,
+            {t('app.desktopLead')}
             <br />
-            배운 것을 오래 기억해요.
+            {t('app.desktopTail')}
           </p>
           <div className="desktop-stars">✳ &nbsp; ✧ &nbsp; ✳</div>
         </div>
       </div>
       <main className="phone-shell">
         {study.restoring || study.restoreError ? (
-          <section className="page account-restore" aria-label="계정 연결">
+          <section className="page account-restore" aria-label={t('account.restore')}>
             {study.restoring ? (
-              <p role="status">계정의 학습 기록을 불러오는 중이에요.</p>
+              <p role="status">{t('account.restoring')}</p>
             ) : (
               <>
-                <p role="alert">계정의 학습 기록을 불러오지 못했어요.</p>
+                <p role="alert">{t('account.restoreFailed')}</p>
                 <button className="big-primary" onClick={study.retryRestore}>
-                  다시 연결
+                  {t('account.reconnect')}
                 </button>
                 <button className="plain-link" onClick={study.continueAsGuest}>
-                  비회원으로 계속
+                  {t('account.continueGuest')}
                 </button>
               </>
             )}
@@ -316,7 +319,7 @@ export default function App() {
                     cards.length
                       ? undefined
                       : {
-                          label: decks.length ? '첫 카드 추가' : '첫 덱 만들기',
+                          label: decks.length ? t('cards.addFirst') : t('decks.first'),
                           onClick: openEditor,
                         }
                   }
@@ -350,7 +353,7 @@ export default function App() {
           className="floating-add"
           disabled={saving}
           onClick={openEditor}
-          aria-label={decks.length ? '새 카드 추가' : '새 덱 만들기'}
+          aria-label={decks.length ? t('cards.add') : t('decks.new')}
         >
           <Plus size={23} />
         </button>
@@ -381,7 +384,7 @@ export default function App() {
           )}
           {modal === 'withdraw-account' && account && (
             <Modal
-              title="회원탈퇴"
+              title={t('account.delete')}
               onClose={() => {
                 if (!saving) setModal('settings');
               }}
@@ -436,14 +439,14 @@ export default function App() {
         <div className="toast sync-error" role="alert">
           <span>{study.syncError}</span>
           <button type="button" onClick={study.clearSyncError}>
-            닫기
+            {t('common.close')}
           </button>
         </div>
       ) : (
         notice && (
           <div className="toast" role="status">
             <Sparkles size={17} />
-            {notice}
+            {t(...notice)}
           </div>
         )
       )}

@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
@@ -36,6 +37,7 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   const backdrop = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function Modal({
         <div className="sheet-handle" />
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-button" onClick={onClose} aria-label="닫기">
+          <button className="icon-button" onClick={onClose} aria-label={t('common.close')}>
             <X size={21} />
           </button>
         </div>

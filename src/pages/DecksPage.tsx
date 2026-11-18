@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
 import { ArrowRight, Cloud, Plus, Search } from 'lucide-react';
 import { DeckTile } from '../components/DeckVisuals';
@@ -14,6 +15,7 @@ export function DecksPage({
   onOpen: (id: string) => void;
   onCreate: () => void;
 }) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const filtered = decks.filter((d) =>
     `${d.title} ${d.subtitle}`.toLowerCase().includes(search.toLowerCase()),
@@ -22,8 +24,8 @@ export function DecksPage({
     <div className="page decks-page">
       <div className="page-heading">
         <div>
-          <h1>나의 작은 공부방</h1>
-          <p>주제별로 덱을 만들고 카드를 모아 보세요.</p>
+          <h1>{t('decks.room')}</h1>
+          <p>{t('decks.subtitle')}</p>
         </div>
         <span className="title-doodle">✿</span>
       </div>
@@ -32,13 +34,13 @@ export function DecksPage({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="덱 이름이나 설명으로 검색"
-          aria-label="학습 덱 검색"
+          placeholder={t('decks.searchHint')}
+          aria-label={t('decks.searchLabel')}
         />
       </label>
       <div className="deck-count-line">
         <span>
-          전체 덱 <strong>{decks.length}개</strong>
+          {t('decks.all')} <strong>{t('decks.count', { count: decks.length })}</strong>
         </span>
       </div>
       <div className="deck-grid decks-big">
@@ -54,14 +56,14 @@ export function DecksPage({
       {filtered.length === 0 && (
         <div className="empty-state">
           <Cloud size={42} />
-          <p>{search.trim() ? '검색 결과가 없어요.' : '아직 만든 덱이 없어요.'}</p>
+          <p>{search.trim() ? t('decks.noSearch') : t('decks.empty')}</p>
         </div>
       )}
       <button className="soft-create" onClick={onCreate}>
         <span>
           <Plus size={20} />
         </span>
-        새 덱 만들기 <ArrowRight size={18} />
+        {t('decks.new')} <ArrowRight size={18} />
       </button>
     </div>
   );

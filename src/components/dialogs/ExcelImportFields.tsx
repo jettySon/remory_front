@@ -1,3 +1,4 @@
+import { useLanguage } from '../../i18n/LanguageProvider';
 import { Download } from 'lucide-react';
 import SelectField from '../SelectField';
 import type { useExcelImport } from '../../hooks/useExcelImport';
@@ -11,6 +12,7 @@ export function ExcelImportFields({
   kind: CardKind;
   excelImport: ReturnType<typeof useExcelImport>;
 }) {
+  const { locale, t } = useLanguage();
   const {
     workbook,
     sheetName,
@@ -26,19 +28,21 @@ export function ExcelImportFields({
     setHeaderOverride,
   } = excelImport;
   const fields = cardFields[kind].fields;
+  const type = t(cardFields[kind].label);
+  const templateFolder = locale === 'ko' ? '' : `${locale}/`;
   return (
     <>
       <div className="workbook-template">
-        <a href={`./templates/${kind}.xlsx`} download={`리모리-${cardFields[kind].label}-양식.xlsx`}>
-          <Download size={16} aria-hidden="true" /> {cardFields[kind].label} 양식 다운로드
+        <a href={`./templates/${templateFolder}${kind}.xlsx`} download={`${t('import.templateName', { type })}.xlsx`}>
+          <Download size={16} aria-hidden="true" /> {t('import.template', { type })}
         </a>
-        <span className="field-hint">첫 행은 그대로 두고, 예시 두 줄을 학습할 내용으로 바꿔 주세요.</span>
+        <span className="field-hint">{t('import.templateHint')}</span>
       </div>
-      <label htmlFor="bulk-workbook">엑셀 파일 선택</label>
+      <label htmlFor="bulk-workbook">{t('import.pickExcel')}</label>
       <div id="bulk-workbook-hint" className="field-hint">
-        <span>엑셀 파일(.xlsx)의 A열부터 아래 순서대로 채워 주세요.</span>
+        <span>{t('import.excelHint')}</span>
         <span>
-          <strong>열 순서</strong> {fields.join(' → ')}
+          <strong>{t('import.order')}</strong> {fields.map((field) => t(field)).join(' → ')}
         </span>
       </div>
       <div className="workbook-picker">
@@ -55,15 +59,15 @@ export function ExcelImportFields({
           }}
         />
         <span className="workbook-picker-action" aria-hidden="true">
-          {fileName ? '파일 변경' : '파일 찾아보기'}
+          {fileName ? t('import.changeFile') : t('import.browse')}
         </span>
         <span id="workbook-name" className="workbook-name">
-          {fileName || '선택한 파일 없음'}
+          {fileName || t('import.noFile')}
         </span>
       </div>
       {workbook.length > 1 && (
         <SelectField
-          label="가져올 시트"
+          label={t('import.sheet')}
           value={sheetName}
           options={workbook.map((item) => ({ value: item.sheet, label: item.sheet }))}
           onChange={selectSheet}
@@ -72,7 +76,7 @@ export function ExcelImportFields({
       {sheet && (
         <label className="workbook-header">
           <input type="checkbox" checked={skipHeader} onChange={(e) => setHeaderOverride(e.target.checked)} />
-          첫 행을 열 제목으로 사용
+          {t('import.useHeader')}
         </label>
       )}
       {(fileError || excelRowError) && (
@@ -82,10 +86,10 @@ export function ExcelImportFields({
       )}
       <div className="field-hint" role="status">
         {reading
-          ? '엑셀 파일을 읽는 중이에요.'
+          ? t('import.reading')
           : sheet &&
             !excelRowError &&
-            (excelRows.length ? `등록할 카드 ${excelRows.length}장` : '이 시트에 등록할 카드가 없어요.')}
+            (excelRows.length ? t('import.ready', { count: excelRows.length }) : t('import.emptySheet'))}
       </div>
     </>
   );

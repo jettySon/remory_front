@@ -1,5 +1,7 @@
+import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { formatWeekday } from '../i18n/messages';
 import { activityPath } from '../api/study';
 import { useStudyQuery } from '../hooks/useStudyQuery';
 import type { DailyCounts } from '../study/insights';
@@ -26,6 +28,7 @@ export function CalendarPage({
   token?: string;
   activityVersion: number;
 }) {
+  const { locale, t } = useLanguage();
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -33,7 +36,8 @@ export function CalendarPage({
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const currentDay = today();
-  const monthLabel = `${year}년 ${monthIndex + 1}월`;
+  const monthLabel = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(month);
+  const fullDate = new Intl.DateTimeFormat(locale, { dateStyle: 'long' });
   const nextMonth = new Date(year, monthIndex + 1, 1);
   const remote = useStudyQuery<DailyCounts>(
     token,
@@ -57,13 +61,13 @@ export function CalendarPage({
     <div className="page">
       <div className="page-heading">
         <div>
-          <h1>학습 캘린더</h1>
+          <h1>{t('calendar.title')}</h1>
         </div>
         <CalendarCloud className="calendar-heading-cloud" />
       </div>
-      <section className="monthly-calendar" aria-label="월별 학습 기록">
+      <section className="monthly-calendar" aria-label={t('calendar.monthly')}>
         <div className="month-heading">
-          <button type="button" onClick={() => moveMonth(-1)} aria-label="이전 달">
+          <button type="button" onClick={() => moveMonth(-1)} aria-label={t('calendar.previous')}>
             <ArrowLeft size={18} />
           </button>
           <h2 aria-live="polite">{monthLabel}</h2>
@@ -71,19 +75,20 @@ export function CalendarPage({
             type="button"
             onClick={() => moveMonth(1)}
             disabled={localDay(month).slice(0, 7) >= currentDay.slice(0, 7)}
-            aria-label="다음 달"
+            aria-label={t('calendar.next')}
           >
             <ArrowRight size={18} />
           </button>
         </div>
         <div className="month-grid">
-          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+          {Array.from({ length: 7 }, (_, day) => formatWeekday(new Date(2024, 0, 7 + day), locale)).map((day) => (
             <span className="month-weekday" key={day}>
               {day}
             </span>
           ))}
           {days.map((day) => {
-            const date = localDay(new Date(year, monthIndex, day));
+            const calendarDay = new Date(year, monthIndex, day);
+            const date = localDay(calendarDay);
             const count = counts.get(date) ?? 0;
             return (
               <div
@@ -95,7 +100,10 @@ export function CalendarPage({
                 {count > 0 && <CalendarCloud className="month-cloud" />}
                 <time
                   dateTime={date}
-                  aria-label={`${monthLabel} ${day}일, ${count ? `복습 ${count}회` : '복습 기록 없음'}`}
+                  aria-label={t('calendar.dayLabel', {
+                    date: fullDate.format(calendarDay),
+                    activity: count ? t('common.reviews', { count }) : t('calendar.noReviews'),
+                  })}
                 >
                   {day}
                 </time>
@@ -106,20 +114,20 @@ export function CalendarPage({
         <div className="month-footer">
           <p className="month-summary" aria-live="polite">
             {remote.loading
-              ? '학습 기록을 불러오는 중이에요.'
+              ? t('calendar.loading')
               : remote.failed
-                ? '학습 기록을 불러오지 못했어요.'
+                ? t('calendar.failed')
                 : counts.size
-                  ? `복습한 날 ${counts.size}일`
-                  : '이 달에는 복습 기록이 없어요.'}
+                  ? t('calendar.days', { count: counts.size })
+                  : t('calendar.emptyMonth')}
           </p>
           {remote.failed && (
             <button className="plain-link" onClick={remote.retry}>
-              다시 불러오기
+              {t('common.retry')}
             </button>
           )}
           <span className="month-legend">
-            <CalendarCloud className="month-legend-cloud" /> 복습한 날
+            <CalendarCloud className="month-legend-cloud" /> {t('calendar.legend')}
           </span>
         </div>
       </section>
