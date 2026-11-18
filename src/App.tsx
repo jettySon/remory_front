@@ -9,7 +9,7 @@ import { EditCardModal } from './components/dialogs/EditCardModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { SettingsModal } from './components/dialogs/SettingsModal';
 import { AccountDeletionForm } from './components/AccountDeletionForm';
-import { Modal } from './components/Modal';
+import { Modal, ModalLayer } from './components/Modal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
 import { useStudyData } from './hooks/useStudyData';
@@ -39,7 +39,12 @@ export default function App() {
   const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
   const [page, setPage] = useState<Page>('home');
   const [openDeckId, setOpenDeckId] = useState<string>();
-  const [modal, setModal] = useState<AppModal | null>(null);
+  const [modalState, setModalState] = useState<{
+    dialog: AppModal;
+    key: number;
+    closing: boolean;
+  } | null>(null);
+  const modal = modalState?.dialog;
   const [notice, setNotice] = useState('');
   const [statsFilters, setStatsFilters] = useState<StatsFilters>({ period: 'all', deckId: null });
   const accountTrigger = useRef<HTMLButtonElement>(null);
@@ -75,7 +80,7 @@ export default function App() {
   const previousAccountId = useRef(account?.id);
   useEffect(() => {
     if (previousAccountId.current && !account) {
-      setModal(null);
+      setModalState(null);
       setPage('home');
       setOpenDeckId(undefined);
       setStatsFilters({ period: 'all', deckId: null });
@@ -84,7 +89,8 @@ export default function App() {
   }, [account]);
 
   function afterAccountChange() {
-    closeAccount();
+    setModalState(null);
+    accountTrigger.current?.focus();
     setPage('home');
     setOpenDeckId(undefined);
     setStatsFilters({ period: 'all', deckId: null });
@@ -107,6 +113,15 @@ export default function App() {
     await study.withdrawAccount(password);
     closeSettings();
     setNotice('회원탈퇴가 완료됐어요.');
+  }
+
+  function setModal(next: AppModal | null) {
+    setModalState((current) => {
+      if (next !== null) {
+        return { dialog: next, key: (current?.key ?? 0) + 1, closing: false };
+      }
+      return current && !current.closing ? { ...current, closing: true } : current;
+    });
   }
 
   function openEditor() {
@@ -340,72 +355,82 @@ export default function App() {
           <Plus size={23} />
         </button>
       )}
-      {modal === 'free-review' && (
-        <FreeReviewModal
-          decks={decks}
-          cards={cards}
-          onStart={startFreeReview}
-          onClose={() => setModal(null)}
-        />
-      )}
-      {modal === 'settings' && (
-        <SettingsModal
-          dark={theme === 'dark'}
-          onToggleDark={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-          onClose={closeSettings}
-          onWithdraw={account ? () => setModal('withdraw-account') : undefined}
-        />
-      )}
-      {modal === 'withdraw-account' && account && (
-        <Modal
-          title="회원탈퇴"
-          onClose={() => {
-            if (!saving) setModal('settings');
-          }}
+      {modalState && (
+        <ModalLayer
+          key={modalState.key}
+          closing={modalState.closing}
+          onExited={() => setModalState((current) => (
+            current?.closing && current.key === modalState.key ? null : current
+          ))}
         >
-          <AccountDeletionForm
-            email={account.email}
-            onDelete={(_, password) => withdrawAccount(password)}
-            onCancel={() => setModal('settings')}
-          />
-        </Modal>
-      )}
-      {modal === 'account' && (
-        <AccountModal
-          account={account}
-          guestPending={study.guestPending}
-          onAuthenticate={connectAccount}
-          onLogout={logout}
-          onClose={closeAccount}
-        />
-      )}
-      {modal === 'deck' && <CreateDeckModal onClose={closeEditor} onCreate={addDeck} saving={saving} />}
-      {modal === 'card' && (
-        <CreateCardModal
-          decks={decks}
-          defaultDeckId={page === 'deck-detail' ? openDeckId : undefined}
-          onClose={closeEditor}
-          onCreate={addCards}
-          saving={saving}
-        />
-      )}
-      {cardModal?.type === 'edit-card' && actionCard && (
-        <EditCardModal
-          key={actionCard.id}
-          card={actionCard}
-          theme={selectedDeck?.theme}
-          saving={saving}
-          onClose={closeEditor}
-          onSave={(content) => editCard(actionCard.id, content)}
-        />
-      )}
-      {cardModal?.type === 'delete-card' && actionCard && (
-        <DeleteCardModal
-          card={actionCard}
-          saving={saving}
-          onClose={closeEditor}
-          onDelete={() => deleteCard(actionCard.id)}
-        />
+          {modal === 'free-review' && (
+            <FreeReviewModal
+              decks={decks}
+              cards={cards}
+              onStart={startFreeReview}
+              onClose={() => setModal(null)}
+            />
+          )}
+          {modal === 'settings' && (
+            <SettingsModal
+              dark={theme === 'dark'}
+              onToggleDark={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+              onClose={closeSettings}
+              onWithdraw={account ? () => setModal('withdraw-account') : undefined}
+            />
+          )}
+          {modal === 'withdraw-account' && account && (
+            <Modal
+              title="회원탈퇴"
+              onClose={() => {
+                if (!saving) setModal('settings');
+              }}
+            >
+              <AccountDeletionForm
+                email={account.email}
+                onDelete={(_, password) => withdrawAccount(password)}
+                onCancel={() => setModal('settings')}
+              />
+            </Modal>
+          )}
+          {modal === 'account' && (
+            <AccountModal
+              account={account}
+              guestPending={study.guestPending}
+              onAuthenticate={connectAccount}
+              onLogout={logout}
+              onClose={closeAccount}
+            />
+          )}
+          {modal === 'deck' && <CreateDeckModal onClose={closeEditor} onCreate={addDeck} saving={saving} />}
+          {modal === 'card' && (
+            <CreateCardModal
+              decks={decks}
+              defaultDeckId={page === 'deck-detail' ? openDeckId : undefined}
+              onClose={closeEditor}
+              onCreate={addCards}
+              saving={saving}
+            />
+          )}
+          {cardModal?.type === 'edit-card' && actionCard && (
+            <EditCardModal
+              key={actionCard.id}
+              card={actionCard}
+              theme={selectedDeck?.theme}
+              saving={saving}
+              onClose={closeEditor}
+              onSave={(content) => editCard(actionCard.id, content)}
+            />
+          )}
+          {cardModal?.type === 'delete-card' && actionCard && (
+            <DeleteCardModal
+              card={actionCard}
+              saving={saving}
+              onClose={closeEditor}
+              onDelete={() => deleteCard(actionCard.id)}
+            />
+          )}
+        </ModalLayer>
       )}
       {study.syncError ? (
         <div className="toast sync-error" role="alert">

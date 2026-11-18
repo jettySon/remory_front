@@ -49,63 +49,48 @@ export function HomePage({
   const due = cards.filter(isDue).length;
   const completed = activity?.[today()]?.total ?? 0;
   const hasCards = cards.length > 0;
-  const actionLabel = hasCards ? '자유 복습' : decks.length ? '첫 카드 추가' : '첫 덱 만들기';
+  const isCreateDeck = !hasCards && decks.length === 0;
+  const actionLabel = hasCards ? '자유 복습' : decks.length ? '첫 카드 추가' : '덱 만들기';
   return (
     <div className="page home-page">
-      <section className="hero" aria-label={hasCards ? '오늘의 복습' : '학습 시작'}>
+      <section className="hero" aria-labelledby="home-hero-title">
         <div className="hero-orb orb-a" />
         <div className="hero-orb orb-b" />
-        <Star className="hero-star first" />
-        <Star className="hero-star second" />
-        <span className="hero-petal p1">✿</span>
-        <span className="hero-petal p2">✧</span>
-        <Mascot className="hero-mascot" />
-        <div className="hero-content">
-          <h1>{hasCards ? '오늘의 복습' : '나의 작은 공부방'}</h1>
-          <p>
-            {due > 0
-              ? '잊기 전에 한 번 더 떠올려 봐요.'
-              : hasCards
-                ? '지금 예정된 복습이 없어요.'
-                : '기억하고 싶은 내용을 카드에 담아 보세요.'}
-          </p>
+        <div className="hero-scene">
+          <span className="hero-cloud" aria-hidden="true" />
+          <Mascot className="hero-mascot" />
+          <Star className="hero-star first" />
+          <Star className="hero-star second" />
         </div>
-        <button
-          className="hero-action-card"
-          type="button"
-          onClick={due > 0 ? () => startReview() : hasCards ? onFreeReview : onCreate}
-          aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : actionLabel}
-        >
-          <svg
-            className="hero-action-cloud"
-            viewBox="0 0 190 72"
-            preserveAspectRatio="none"
-            aria-hidden="true"
+        <div className="hero-content">
+          <div>
+            <h1 id="home-hero-title" lang={hasCards ? undefined : 'en'}>
+              {hasCards ? '오늘의 복습' : <>Little by <span>little.</span></>}
+            </h1>
+            <p>
+              {due > 0
+                ? '잊기 전에 한 번 더 떠올려 봐요.'
+                : hasCards
+                  ? '지금 예정된 복습이 없어요.'
+                  : '오늘 배운 것부터 한 장씩.'}
+            </p>
+          </div>
+          <button
+            className={isCreateDeck ? 'hero-action hero-create-deck' : 'hero-action'}
+            type="button"
+            onClick={due > 0 ? () => startReview() : hasCards ? onFreeReview : onCreate}
+            aria-label={due > 0 ? `복습할 카드 ${due}장, 복습 시작하기` : undefined}
           >
-            <defs>
-              <linearGradient id="review-cloud-fill" x1="0" y1="0" x2="0" y2="100%">
-                <stop className="review-cloud-light" />
-                <stop className="review-cloud-shade" offset="1" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M28 66C13 66 4 56 4 42c0-12 9-22 21-24C34 7 50 4 63 11c12-11 30-13 44-4 15-6 32-1 40 9 11-2 22 3 26 13 8 2 13 9 13 17 0 11-9 20-22 20Z"
-              fill="url(#review-cloud-fill)"
-            />
-          </svg>
-          {due > 0 ? (
-            <span className="hero-count">
-              <span>복습할 카드</span>
-              <strong>
-                {due}
-                <small>장</small>
-              </strong>
-            </span>
-          ) : (
-            <span className="hero-free-label">{actionLabel}</span>
-          )}
-          <ArrowRight className="hero-action-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
-        </button>
+            {due > 0 ? (
+              <span className="hero-count">{due}<span>장</span></span>
+            ) : actionLabel}
+            {!isCreateDeck && (
+              <span className="hero-action-arrow" aria-hidden="true">
+                <ArrowRight size={15} strokeWidth={1.8} />
+              </span>
+            )}
+          </button>
+        </div>
       </section>
       <section className="week-section">
         <SectionHeading title="최근 7일 복습" />

@@ -117,7 +117,7 @@ export function ReviewPage({
           <span>{flipped ? '정답' : cardFields[current.kind ?? 'basic'].label}</span>
           <Star />
         </span>
-        <div className="flashcard-content">
+        <div className="flashcard-content" key={flipped ? 'answer' : 'question'}>
           <span className="flashcard-emoji">{flipped ? '✦' : '☁'}</span>
           <h2>{flipped ? current.back : current.front}</h2>
         </div>

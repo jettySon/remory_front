@@ -119,7 +119,7 @@ export function AccountModal({
           </button>
         </div>
       )}
-      <form key={mode} className="sheet-form" onInput={() => setFeedback('')} onSubmit={submit}>
+      <form key={mode} className="sheet-form account-form" onInput={() => setFeedback('')} onSubmit={submit}>
         <label>
           이메일
           <input

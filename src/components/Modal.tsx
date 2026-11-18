@@ -1,5 +1,31 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+
+export function ModalLayer({
+  closing,
+  onExited,
+  children,
+}: {
+  closing: boolean;
+  onExited: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="modal-layer"
+      data-closing={closing || undefined}
+      inert={closing}
+      onAnimationEnd={(event) => {
+        // The dimmer finishes even if saving removed the dialog's content.
+        if (closing && event.target === event.currentTarget && event.animationName === 'modal-dimmer-out') {
+          onExited();
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export function Modal({
   title,
@@ -10,9 +36,12 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const backdrop = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const cb = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      const layer = backdrop.current;
+      if (e.key === 'Escape' && !e.defaultPrevented && layer && !layer.closest('[inert]')) onClose();
     };
     window.addEventListener('keydown', cb);
     return () => window.removeEventListener('keydown', cb);
@@ -20,6 +49,7 @@ export function Modal({
   return (
     <div
       className="modal-backdrop"
+      ref={backdrop}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
