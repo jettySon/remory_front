@@ -996,3 +996,69 @@ button { border: 0; }
 @media (prefers-reduced-motion: reduce) {
   .settings-switch::after { transition: none; }
 }
+
+.settings-withdraw .settings-option-icon {
+  color: #963950;
+  background: #f9e8ee;
+}
+[data-theme='dark'] .settings-withdraw .settings-option-icon {
+  color: #ffcfdb;
+  background: #573345;
+}
+.account-deletion-page {
+  justify-content: flex-start;
+  margin-inline: auto;
+}
+.deletion-back {
+  text-decoration: none;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.deletion-email,
+.deletion-note {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.sheet-form .deletion-confirmation {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.sheet-form .deletion-confirmation input {
+  appearance: auto;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #795c98;
+}
+.account-deletion-actions {
+  display: flex;
+  gap: 9px;
+  margin: 4px 0 8px;
+}
+.account-deletion-actions button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  border-radius: 14px;
+  color: var(--field-ink);
+  background: var(--field-highlight);
+  font-size: 14px;
+  font-weight: 750;
+}
+.account-deletion-actions .account-deletion-submit {
+  color: #fff;
+  background: #a14564;
+}
+.account-deletion-actions button:disabled { opacity: 0.65; }

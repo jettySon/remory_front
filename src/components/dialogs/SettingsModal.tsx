@@ -1,13 +1,15 @@
-import { Moon } from 'lucide-react';
+import { ChevronRight, Moon, UserRoundX } from 'lucide-react';
 import { Modal } from '../Modal';
 
 export function SettingsModal({
   dark,
   onToggleDark,
+  onWithdraw,
   onClose,
 }: {
   dark: boolean;
   onToggleDark: () => void;
+  onWithdraw?: () => void;
   onClose: () => void;
 }) {
   return (
@@ -27,6 +29,15 @@ export function SettingsModal({
           <span className="settings-option-label">다크 모드</span>
           <span className="settings-switch" aria-hidden="true" />
         </button>
+        {onWithdraw && (
+          <button className="settings-option settings-withdraw" type="button" onClick={onWithdraw}>
+            <span className="settings-option-icon" aria-hidden="true">
+              <UserRoundX size={19} />
+            </span>
+            <span className="settings-option-label">회원탈퇴</span>
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </Modal>
   );

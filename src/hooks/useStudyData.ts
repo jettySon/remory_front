@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { authenticate, endSession, type AccountAction, type Session } from '../api/account';
+import {
+  authenticate,
+  deleteSignedInAccount,
+  endSession,
+  type AccountAction,
+  type Session,
+} from '../api/account';
+import { readSession, rememberSession } from '../api/session';
 import { ApiError } from '../api/request';
 import {
   deleteStudyCard,
@@ -17,29 +24,8 @@ import { newStudyId } from '../study/review';
 import { nextReviewAt } from '../study/reviewScheduler';
 import type { CardContent, CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
 
-const sessionKey = 'remory-account-session';
 type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
-
-function readSession(): Session | null {
-  try {
-    const raw = sessionStorage.getItem(sessionKey);
-    if (!raw) return null;
-    const value = JSON.parse(raw) as Session;
-    return value.accessToken && Date.parse(value.expiresAt) > Date.now() ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function rememberSession(session: Session | null) {
-  try {
-    if (session) sessionStorage.setItem(sessionKey, JSON.stringify(session));
-    else sessionStorage.removeItem(sessionKey);
-  } catch {
-    // The active session still works when browser storage is unavailable.
-  }
-}
 
 function mergeById<T extends { id: string }>(items: T[], updates: T[]): T[] {
   const byId = new Map(items.map((item) => [item.id, item]));
@@ -167,18 +153,47 @@ export function useStudyData() {
     }
   }
 
+  function clearAccount() {
+    rememberSession(null);
+    setConnection(null);
+    setSavedSession(null);
+    pendingDeck.current = undefined;
+    pendingCards.current = undefined;
+  }
+
   async function disconnect() {
     if (!connection || inFlight.current) return;
     inFlight.current = true;
     try {
       await endSession(connection.session.accessToken);
-      rememberSession(null);
-      setConnection(null);
-      setSavedSession(null);
+      clearAccount();
     } catch {
       throw new Error('로그아웃하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.');
     } finally {
       inFlight.current = false;
+    }
+  }
+
+  async function withdrawAccount(password: string) {
+    if (!connection || inFlight.current) {
+      throw new Error('다시 로그인한 뒤 탈퇴를 진행해 주세요.');
+    }
+
+    inFlight.current = true;
+    setSaving(true);
+    setSyncError('');
+    try {
+      await deleteSignedInAccount(connection.session.accessToken, password);
+      clearAccount();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearAccount();
+        setSyncError('로그인이 만료됐어요. 다시 로그인해 주세요.');
+      }
+      throw error;
+    } finally {
+      inFlight.current = false;
+      setSaving(false);
     }
   }
 
@@ -215,9 +230,7 @@ export function useStudyData() {
       return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        rememberSession(null);
-        setSavedSession(null);
-        setConnection(null);
+        clearAccount();
         setSyncError('로그인이 만료됐어요. 다시 로그인해 주세요.');
       } else {
         setSyncError(
@@ -346,6 +359,7 @@ export function useStudyData() {
     recordReview,
     connect,
     disconnect,
+    withdrawAccount,
     account: connection?.session.account,
     token: connection?.session.accessToken,
     activityVersion,

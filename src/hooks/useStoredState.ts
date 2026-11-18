@@ -10,7 +10,11 @@ export function useStoredState<T>(key: string, initial: T): [T, (next: T | ((v: 
     }
   });
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // 브라우저가 저장을 차단해도 현재 화면에서 선택한 값을 사용한다.
+    }
   }, [key, value]);
   return [value, setValue];
 }

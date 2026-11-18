@@ -8,6 +8,8 @@ import { DeleteCardModal } from './components/dialogs/DeleteCardModal';
 import { EditCardModal } from './components/dialogs/EditCardModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { SettingsModal } from './components/dialogs/SettingsModal';
+import { AccountDeletionForm } from './components/AccountDeletionForm';
+import { Modal } from './components/Modal';
 import { useReviewSession } from './hooks/useReviewSession';
 import { useStoredState } from './hooks/useStoredState';
 import { useStudyData } from './hooks/useStudyData';
@@ -29,6 +31,7 @@ type AppModal =
   | 'card'
   | 'account'
   | 'settings'
+  | 'withdraw-account'
   | 'free-review'
   | { type: 'edit-card' | 'delete-card'; cardId: string };
 
@@ -98,6 +101,12 @@ export default function App() {
     await study.disconnect();
     afterAccountChange();
     setNotice('로그아웃했어요.');
+  }
+
+  async function withdrawAccount(password: string) {
+    await study.withdrawAccount(password);
+    closeSettings();
+    setNotice('회원탈퇴가 완료됐어요.');
   }
 
   function openEditor() {
@@ -344,7 +353,22 @@ export default function App() {
           dark={theme === 'dark'}
           onToggleDark={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
           onClose={closeSettings}
+          onWithdraw={account ? () => setModal('withdraw-account') : undefined}
         />
+      )}
+      {modal === 'withdraw-account' && account && (
+        <Modal
+          title="회원탈퇴"
+          onClose={() => {
+            if (!saving) setModal('settings');
+          }}
+        >
+          <AccountDeletionForm
+            email={account.email}
+            onDelete={(_, password) => withdrawAccount(password)}
+            onCancel={() => setModal('settings')}
+          />
+        </Modal>
       )}
       {modal === 'account' && (
         <AccountModal
