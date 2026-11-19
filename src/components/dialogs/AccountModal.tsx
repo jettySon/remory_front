@@ -1,3 +1,4 @@
+import { Form, Field } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
@@ -121,10 +122,10 @@ export function AccountModal({
           </button>
         </div>
       )}
-      <form key={mode} className="sheet-form account-form" onInput={() => setFeedback('')} onSubmit={submit}>
+      <Form key={mode} className="sheet-form account-form" onInput={() => setFeedback('')} onSubmit={submit}>
         <label>
           {t('account.email')}
-          <input
+          <Field
             type="email"
             name="email"
             autoComplete="email"
@@ -141,7 +142,7 @@ export function AccountModal({
           <div className="account-password">
             <label htmlFor="account-password">{t('account.password')}</label>
             <div className="password-control">
-              <input
+              <Field
                 id="account-password"
                 name="password"
                 disabled={pending}
@@ -179,7 +180,7 @@ export function AccountModal({
             {feedback}
           </p>
         )}
-      </form>
+      </Form>
       {isReset ? (
         <button className="account-help-link" type="button" onClick={() => changeMode('login')}>
           <ArrowLeft size={15} aria-hidden="true" /> {t('account.backToLogin')}

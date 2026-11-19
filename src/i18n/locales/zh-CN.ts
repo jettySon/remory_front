@@ -1,6 +1,12 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'validation.required': "请填写此项。",
+  'validation.checked': "请勾选此项后继续。",
+  'validation.email': "请输入有效的邮箱地址。",
+  'validation.minLength': "请至少输入 {count} 个字符。",
+  'validation.maxLength': "请输入不超过 {count} 个字符。",
+  'validation.invalid': "请检查输入的内容。",
   'app.title': "Remory — 让记忆慢慢生长",
   'app.desktopFirst': "小小的记忆",
   'app.desktopSecond': "也能开花。",

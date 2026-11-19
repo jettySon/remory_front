@@ -1,3 +1,4 @@
+import { Form, Field } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
@@ -63,7 +64,7 @@ export function CreateCardModal({
   };
   return (
     <Modal title={t('cards.add')} onClose={onClose}>
-      <form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
+      <Form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
         <SelectField
           label={t('nav.decks')}
           value={deckId}
@@ -143,7 +144,7 @@ export function CreateCardModal({
                     <strong>{t('import.order')}</strong> {fields.map((field) => t(field)).join(' → ')}
                   </span>
                 </div>
-                <textarea
+                <Field as="textarea"
                   id="bulk-cards"
                   aria-describedby="bulk-cards-hint"
                   required
@@ -173,7 +174,7 @@ export function CreateCardModal({
           {bulk ? t('import.submit', { count: excel && excelRowError ? 0 : rows.length }) : t('cards.save')}{' '}
           <ArrowRight size={18} />
         </button>
-      </form>
+      </Form>
     </Modal>
   );
 }

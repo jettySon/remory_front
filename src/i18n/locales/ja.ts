@@ -1,6 +1,12 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'validation.required': "内容を入力してください。",
+  'validation.checked': "続けるには、この項目にチェックを入れてください。",
+  'validation.email': "正しいメールアドレスを入力してください。",
+  'validation.minLength': "{count}文字以上で入力してください。",
+  'validation.maxLength': "{count}文字以内で入力してください。",
+  'validation.invalid': "入力内容を確認してください。",
   'app.title': "Remory — 記憶が育つ場所",
   'app.desktopFirst': "小さな記憶が",
   'app.desktopSecond': "開花する場所。",

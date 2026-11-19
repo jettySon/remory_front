@@ -1,3 +1,4 @@
+import { Form } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
@@ -37,7 +38,7 @@ export function EditCardModal({
 
   return (
     <Modal title={t('cards.edit')} onClose={onClose}>
-      <form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
+      <Form className="sheet-form" onSubmit={submit} onInput={() => setError('')}>
         <CardFormFields
           kind={kind}
           labels={labels}
@@ -54,7 +55,7 @@ export function EditCardModal({
         <button className="big-primary form-submit" type="submit" disabled={saving}>
           {saving ? t('cards.saving') : t('cards.saveChanges')} <ArrowRight size={18} aria-hidden="true" />
         </button>
-      </form>
+      </Form>
     </Modal>
   );
 }

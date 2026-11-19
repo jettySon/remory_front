@@ -788,9 +788,10 @@ button { border: 0; }
 .sheet-form .password-control input { padding-inline-end: 50px; }
 .password-control button {
   position: absolute;
-  inset-block: 4px;
+  top: 4px;
   inset-inline-end: 4px;
   width: 40px;
+  height: 37px;
   display: grid;
   place-items: center;
   border-radius: 10px;
@@ -1227,3 +1228,36 @@ button { border: 0; }
   background: #a14564;
 }
 .account-deletion-actions button:disabled { opacity: 0.65; }
+
+.form-field {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  gap: 7px;
+}
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #a04f70;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.55;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+  animation: content-in var(--motion-fast) ease-out;
+}
+.field-error > svg { flex: none; margin-top: 2px; }
+.sheet-form :is(input, textarea)[aria-invalid='true'] {
+  border-color: #ce99b0;
+  background: #fff7fa;
+}
+.sheet-form :is(input, textarea)[aria-invalid='true']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #ce99b033;
+}
+[data-theme='dark'] .field-error { color: #f1b4ce; }
+[data-theme='dark'] .sheet-form :is(input, textarea)[aria-invalid='true'] {
+  border-color: #b77e9e;
+  background: #3b2939;
+}

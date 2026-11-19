@@ -1,3 +1,4 @@
+import { Form, Field } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { useState } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
@@ -23,7 +24,7 @@ export function CreateDeckModal({
   const [theme, setTheme] = useState<DeckTheme>(kind.theme);
   return (
     <Modal title={t('decks.new')} onClose={onClose}>
-      <form
+      <Form
         className="sheet-form"
         onSubmit={(e) => {
           e.preventDefault();
@@ -32,11 +33,11 @@ export function CreateDeckModal({
       >
         <label>
           {t('decks.name')}
-          <input autoFocus required maxLength={35} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Field autoFocus required maxLength={35} value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label>
           {t('decks.description')}
-          <input maxLength={70} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+          <Field maxLength={70} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
         </label>
         <SelectField
           label={t('decks.kind')}
@@ -70,7 +71,7 @@ export function CreateDeckModal({
         <button className="big-primary form-submit" disabled={saving}>
           {t('decks.create')} <ArrowRight size={18} />
         </button>
-      </form>
+      </Form>
     </Modal>
   );
 }

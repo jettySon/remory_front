@@ -1,4 +1,10 @@
 const ko = {
+  'validation.required': "내용을 입력해 주세요.",
+  'validation.checked': "계속하려면 이 항목을 체크해 주세요.",
+  'validation.email': "올바른 이메일 주소를 입력해 주세요.",
+  'validation.minLength': "{count}자 이상 입력해 주세요.",
+  'validation.maxLength': "{count}자 이내로 입력해 주세요.",
+  'validation.invalid': "입력한 내용을 확인해 주세요.",
   'app.title': "Remory — 기억이 피어나는 곳",
   'app.desktopFirst': "작은 기억이",
   'app.desktopSecond': "꽃이 되는 곳.",

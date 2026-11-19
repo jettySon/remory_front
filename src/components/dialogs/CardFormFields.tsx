@@ -1,3 +1,4 @@
+import { Field } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import type { MessageKey } from '../../i18n/messages';
 import { cardFields } from '../../study/cards';
@@ -24,7 +25,7 @@ export function CardFormFields({
       {labels.map((label, index) => (
         <label key={label}>
           {t(label)}
-          <textarea
+          <Field as="textarea"
             required
             disabled={saving}
             rows={index === 0 ? 2 : 1}

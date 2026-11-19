@@ -1,6 +1,12 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'validation.required': "Please fill in this field.",
+  'validation.checked': "Please check this box to continue.",
+  'validation.email': "Enter a valid email address.",
+  'validation.minLength': "Use at least {count} characters.",
+  'validation.maxLength': "Use no more than {count} characters.",
+  'validation.invalid': "Please check this value.",
   'app.title': "Remory — A place for little memories",
   'app.desktopFirst': "A place for",
   'app.desktopSecond': "little memories.",

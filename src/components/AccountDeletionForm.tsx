@@ -1,3 +1,4 @@
+import { Form, Field, CheckboxField } from './Form';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { useRef, useState, type FormEvent } from 'react';
 import { UserRoundX } from 'lucide-react';
@@ -45,7 +46,7 @@ export function AccountDeletionForm({
   }
 
   return (
-    <form
+    <Form
       className="sheet-form account-deletion-form"
       method="post"
       onSubmit={submit}
@@ -56,7 +57,7 @@ export function AccountDeletionForm({
       {!email && (
         <label>
           {t('account.registeredEmail')}
-          <input
+          <Field
             type="email"
             name="email"
             autoComplete="username"
@@ -69,7 +70,7 @@ export function AccountDeletionForm({
       )}
       <label>
         {t('account.password')}
-        <input
+        <Field
           type="password"
           name="password"
           autoComplete="current-password"
@@ -79,10 +80,9 @@ export function AccountDeletionForm({
           disabled={pending}
         />
       </label>
-      <label className="deletion-confirmation">
-        <input type="checkbox" name="confirm" required disabled={pending} />
+      <CheckboxField className="deletion-confirmation" name="confirm" required disabled={pending}>
         {t('account.confirmDelete')}
-      </label>
+      </CheckboxField>
       {feedback && (
         <p className="form-error" role="alert">
           {feedback}
@@ -98,6 +98,6 @@ export function AccountDeletionForm({
           <UserRoundX size={17} aria-hidden="true" /> {pending ? t('cards.deleting') : t('account.deleteData')}
         </button>
       </div>
-    </form>
+    </Form>
   );
 }
