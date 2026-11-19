@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { formatWeekday } from '../i18n/messages';
 import { activityPath } from '../api/study';
+import { StatsShortcut } from '../components/StatsShortcut';
 import { useStudyQuery } from '../hooks/useStudyQuery';
 import type { DailyCounts } from '../study/insights';
 import { localDay, today } from '../study/review';
@@ -23,10 +24,12 @@ export function CalendarPage({
   logs,
   token,
   activityVersion,
+  onStats,
 }: {
   logs: ReviewLog[];
   token?: string;
   activityVersion: number;
+  onStats: () => void;
 }) {
   const { locale, t } = useLanguage();
   const [month, setMonth] = useState(() => {
@@ -58,7 +61,7 @@ export function CalendarPage({
   const days = Array.from({ length: new Date(year, monthIndex + 1, 0).getDate() }, (_, index) => index + 1);
   const moveMonth = (offset: number) => setMonth(new Date(year, monthIndex + offset, 1));
   return (
-    <div className="page">
+    <div className="page calendar-page">
       <div className="page-heading">
         <div>
           <h1>{t('calendar.title')}</h1>
@@ -131,6 +134,7 @@ export function CalendarPage({
           </span>
         </div>
       </section>
+      <StatsShortcut onOpen={onStats} />
     </div>
   );
 }

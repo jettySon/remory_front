@@ -327,7 +327,12 @@ export default function App() {
                 />
               )}
               {page === 'calendar' && (
-                <CalendarPage logs={studyLogs} token={token} activityVersion={activityVersion} />
+                <CalendarPage
+                  logs={studyLogs}
+                  token={token}
+                  activityVersion={activityVersion}
+                  onStats={() => navigate('stats')}
+                />
               )}
               {page === 'stats' && (
                 <StatsPage

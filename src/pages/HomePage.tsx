@@ -1,9 +1,10 @@
 import { useLanguage } from '../i18n/LanguageProvider';
-import { ArrowRight, BarChart3, Check, ChevronRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { formatWeekday } from '../i18n/messages';
 import { DeckTile } from '../components/DeckVisuals';
 import { Mascot, Star } from '../components/Illustrations';
 import { SectionHeading } from '../components/SectionHeading';
+import { StatsShortcut } from '../components/StatsShortcut';
 import { type DailyCounts, weekDays } from '../study/insights';
 import { isDue, today } from '../study/review';
 import type { Deck, Page, StudyCard } from '../types';
@@ -116,16 +117,10 @@ export function HomePage({
           </div>
         </section>
       )}
-      <button className="stat-shortcut" onClick={() => go('stats')}>
-        <span className="stat-icon">
-          <BarChart3 size={21} />
-        </span>
-        <span>
-          <strong>{t('stats.title')}</strong>
-          <small>{completed ? t('home.reviewedToday', { count: completed }) : t('home.noReviewToday')}</small>
-        </span>
-        <ChevronRight size={18} />
-      </button>
+      <StatsShortcut
+        onOpen={() => go('stats')}
+        description={completed ? t('home.reviewedToday', { count: completed }) : t('home.noReviewToday')}
+      />
     </div>
   );
 }
