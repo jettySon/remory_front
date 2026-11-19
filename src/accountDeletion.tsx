@@ -40,6 +40,7 @@ function AccountDeletionPage() {
               <UserRoundX size={19} />
             </span>
           </div>
+          <a className="account-privacy-link deletion-privacy-link" href="/privacy/">{t('privacy.title')}</a>
           <div className="deletion-language"><LanguageField /></div>
           {deleted ? (
             <p className="deletion-note" role="status">

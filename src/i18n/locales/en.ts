@@ -32,6 +32,7 @@ const messages = {
   'nav.review': "Review",
   'nav.calendar': "History",
   'nav.main': "Main navigation",
+  "privacy.title": "Privacy Policy",
   'settings.title': "Settings",
   'settings.dark': "Dark mode",
   'settings.language': "Language",

@@ -1,5 +1,5 @@
 import { useLanguage } from '../../i18n/LanguageProvider';
-import { ChevronRight, Languages, Moon, UserRoundX } from 'lucide-react';
+import { ChevronRight, Languages, Moon, ShieldCheck, UserRoundX } from 'lucide-react';
 import { LanguageField } from '../LanguageField';
 import { Modal } from '../Modal';
 
@@ -38,6 +38,11 @@ export function SettingsModal({
           </span>
           <LanguageField />
         </div>
+        <a className="settings-option settings-privacy" href="/privacy/">
+          <span className="settings-option-icon" aria-hidden="true"><ShieldCheck size={19} /></span>
+          <span className="settings-option-label">{t('privacy.title')}</span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </a>
         {onWithdraw && (
           <button className="settings-option settings-withdraw" type="button" onClick={onWithdraw}>
             <span className="settings-option-icon" aria-hidden="true">

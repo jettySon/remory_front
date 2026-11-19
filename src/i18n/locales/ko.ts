@@ -30,6 +30,7 @@ const ko = {
   'nav.review': "복습",
   'nav.calendar': "학습 기록",
   'nav.main': "주요 화면",
+  "privacy.title": "개인정보 처리방침",
   'settings.title': "설정",
   'settings.dark': "다크 모드",
   'settings.language': "언어",

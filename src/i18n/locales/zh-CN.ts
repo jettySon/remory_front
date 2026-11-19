@@ -32,6 +32,7 @@ const messages = {
   'nav.review': "复习",
   'nav.calendar': "学习记录",
   'nav.main': "主导航",
+  "privacy.title": "隐私政策",
   'settings.title': "设置",
   'settings.dark': "深色模式",
   'settings.language': "语言",

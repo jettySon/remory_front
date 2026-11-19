@@ -32,6 +32,7 @@ const messages = {
   'nav.review': "復習",
   'nav.calendar': "学習記録",
   'nav.main': "メインナビゲーション",
+  "privacy.title": "プライバシーポリシー",
   'settings.title': "設定",
   'settings.dark': "ダークモード",
   'settings.language': "言語",

@@ -240,6 +240,7 @@ export function AccountModal({
           </button>
         )
       )}
+      <a className="account-privacy-link" href="/privacy/">{t('privacy.title')}</a>
     </Modal>
   );
 }
