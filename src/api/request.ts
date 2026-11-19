@@ -31,6 +31,6 @@ export async function request<T>(
     const code = typeof problem?.code === 'string' ? problem.code : undefined;
     throw new ApiError(response.status, detail, code);
   }
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204 || (response.status === 202 && !response.headers.get('content-type')?.includes('json'))) return undefined as T;
   return response.json() as Promise<T>;
 }

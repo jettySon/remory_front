@@ -6,12 +6,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: { '/api': loadEnv(mode, '.', 'REMORY_').REMORY_API_TARGET ?? 'http://127.0.0.1:8080' },
   },
-  build: { rollupOptions: { input: ['index.html', 'account-deletion/index.html'] } },
+  build: { rollupOptions: { input: ['index.html', 'account-deletion/index.html', 'password-reset/index.html'] } },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: { navigateFallbackDenylist: [/^\/account-deletion(?:\/|$)/] },
+      workbox: { navigateFallbackDenylist: [/^\/(?:account-deletion|password-reset)(?:\/|$)/] },
       includeAssets: ['mascot.svg', 'garden.svg', 'icon.svg', 'templates/**/*.xlsx'],
       manifest: {
         name: 'Remory — 기억이 피어나는 곳',

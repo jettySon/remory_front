@@ -1272,3 +1272,54 @@ button { border: 0; }
 .account-divider::before, .account-divider::after { content: ""; flex: 1; height: 1px; background: #d6c5df70; }
 .google-linked { font-size: 12px; color: var(--muted); }
 .deletion-methods { margin-bottom: 18px; }
+
+
+.password-reset-page { margin-inline: auto; overflow-y: auto; }
+.password-reset-page .page { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+.password-reset-intro { display: flex; align-items: center; gap: 14px; margin: 20px 0 24px; padding: 16px; border-radius: 22px; background: linear-gradient(125deg, #f0e6fa, #fbe9ee); }
+.password-reset-intro p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink); }
+.password-reset-notice { display: grid; justify-items: center; gap: 13px; text-align: center; padding: 26px 20px; border-radius: 24px; background: linear-gradient(140deg, #f0e8fa, #fcf0ed); }
+.password-reset-notice h2 { margin: 0; font-size: 18px; color: var(--ink); letter-spacing: -.035em; }
+.password-reset-notice p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.password-reset-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 19px; background: #ffffffa3; color: #8264a2; }
+.password-reset-help { margin: 16px 0 4px; color: var(--muted); font-size: 12px; line-height: 1.75; }
+.password-reset-home { margin-top: 7px; text-decoration: none; box-shadow: none; }
+[data-theme="dark"] :is(.password-reset-intro, .password-reset-notice) { background: linear-gradient(135deg, #382b48, #43303f); }
+[data-theme="dark"] .password-reset-icon { background: #574169; color: #e4d2fa; }
+[data-theme="dark"] .account-reset-guide { color: var(--ink); }
+
+
+.reset-progress { display: flex; align-items: center; justify-content: space-between; gap: 6px; list-style: none; margin: 0 0 22px; padding: 0; }
+.reset-progress li { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--muted); font-size: 10px; font-weight: 650; }
+.reset-progress li > span { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: #efe8f2; color: #a293ad; font-size: 10px; }
+.reset-progress li.is-active { color: var(--accent); }
+.reset-progress li.is-active > span { background: #e8dcf6; color: #70508f; }
+.reset-progress li.is-complete > span { background: #e4f0e9; color: #6b947b; }
+.reset-code-intro { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 14px; border-radius: 20px; background: linear-gradient(130deg, #f2e8fb, #fceef1); }
+.reset-code-intro .password-reset-icon { width: 44px; height: 44px; flex: none; border-radius: 16px; }
+.reset-code-intro strong { color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+.reset-code-intro p { margin: 6px 0 0; color: var(--ink); font-size: 12px; line-height: 1.65; }
+.sheet-form input.reset-code-input { text-align: center; font-size: 23px; font-weight: 650; letter-spacing: .24em; font-variant-numeric: tabular-nums; padding-inline: 15px 9px; }
+.reset-code-input::placeholder { color: #cec1d5; }
+.reset-code-actions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 3px; }
+.reset-code-actions .account-help-link { font-size: 12px; }
+.password-reset-request button:disabled { cursor: default; }
+.reset-code-actions button:disabled { opacity: .55; text-decoration: none; }
+.reset-verified { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; color: var(--accent); font-size: 12px; }
+[data-theme="dark"] .reset-code-intro { background: linear-gradient(130deg, #392c49, #44303f); }
+[data-theme="dark"] .reset-progress li > span { background: #382f41; color: #ad9bbd; }
+[data-theme="dark"] .reset-progress li.is-active > span { background: #58416e; color: #efdcff; }
+[data-theme="dark"] .reset-progress li.is-complete > span { background: #344e44; color: #c2e5cf; }
+[data-theme="dark"] .reset-code-input::placeholder { color: #756780; }
+
+.password-reset-page { scrollbar-width: thin; scrollbar-color: #c9b9d8 transparent; }
+.password-reset-page::-webkit-scrollbar { width: 4px; }
+.password-reset-page::-webkit-scrollbar-thumb { border-radius: 9px; background: #c9b9d8; }
+[data-theme="dark"] .password-reset-page { scrollbar-color: #6f587e transparent; }
+[data-theme="dark"] .password-reset-page::-webkit-scrollbar-thumb { background: #6f587e; }
+
+
+.reset-password-actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: stretch; gap: 10px; margin-top: 12px; }
+.reset-password-actions .account-help-link { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; justify-content: center; margin: 0; padding: 10px 4px; font-size: 12px; text-align: center; }
+.reset-password-actions .account-help-link svg { flex: none; }
+.reset-password-actions .account-help-link:disabled { opacity: .55; }
