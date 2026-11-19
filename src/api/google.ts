@@ -1,4 +1,5 @@
 import { request, ApiError } from './request';
+import { performSignIn } from './session';
 import type { Account, Session } from './account';
 import type { MessageKey } from '../i18n/messages';
 
@@ -9,7 +10,7 @@ export const googleChallenge = (purpose: GooglePurpose, signal: AbortSignal) =>
   request<{ clientId: string; nonce: string }>(`/auth/google/challenge?purpose=${purpose}`, 'GET', undefined, undefined, signal);
 
 export const authenticateGoogle = (proof: GoogleProof, password?: string) =>
-  request<Session>('/auth/google', 'POST', undefined, { ...proof, password });
+  performSignIn(() => request<Session>('/auth/google', 'POST', undefined, { ...proof, password }));
 
 export const deleteSignedInWithGoogle = (token: string, proof: GoogleProof) =>
   request<void>('/auth/google/me/delete', 'POST', token, proof);

@@ -9,11 +9,13 @@ import {
   type AccountAction,
   type Session,
 } from '../api/account';
-import { readSession, rememberSession } from '../api/session';
+import { readSession, rememberSession, restoreSession, subscribeSession, startSessionLifecycle, suspendSession, hasSavedAccount } from '../api/session';
 import { ApiError } from '../api/request';
 import { authenticateGoogle, deleteSignedInWithGoogle, type GoogleProof } from '../api/google';
 import {
   deleteStudyCard,
+  deleteStudyDeck,
+  editStudyDeck,
   editStudyCard,
   fetchStudy,
   importStudy,
@@ -26,12 +28,12 @@ import {
 import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy } from '../study/guestData';
 import { newStudyId } from '../study/review';
 import { nextReviewAt } from '../study/reviewScheduler';
-import type { CardContent, CardDraft, Deck, Rating, ReviewLog, ReviewMode } from '../types';
+import type { CardContent, CardDraft, Deck, DeckContent, Rating, ReviewLog, ReviewMode } from '../types';
 
 type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
 
-class MissingStudyCard extends Error {
+class MissingStudyItem extends Error {
   constructor(readonly messageKey: MessageKey) {
     super(messageKey);
   }
@@ -47,8 +49,7 @@ export function useStudyData() {
   const { t } = useLanguage();
   const [guest, setGuest] = useState(readGuestStudy);
   const [connection, setConnection] = useState<Connection | null>(null);
-  const [savedSession, setSavedSession] = useState(readSession);
-  const [restoring, setRestoring] = useState(Boolean(savedSession));
+  const [restoring, setRestoring] = useState(true);
   const [restoreError, setRestoreError] = useState(false);
   const [restoreAttempt, setRestoreAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -58,35 +59,90 @@ export function useStudyData() {
   const [syncError, setSyncError] = useState<MessageKey | ''>('');
   const inFlight = useRef(false);
 
+  const restoreController = useRef<AbortController | null>(null);
+  const connectionRef = useRef(connection);
+  connectionRef.current = connection;
+
   useEffect(() => {
-    if (!savedSession) return;
-    const controller = new AbortController();
-    Promise.all([
-      fetchStudy(savedSession.accessToken, controller.signal),
-      fetchAccount(savedSession.accessToken, controller.signal),
-    ])
-      .then(([library, account]) => {
-        if (!controller.signal.aborted) {
-          const session = { ...savedSession, account };
-          rememberSession(session);
-          setConnection({ session, library });
+    const stopLifecycle = startSessionLifecycle();
+    const unsubscribe = subscribeSession(({ session, reason }) => {
+      if (!session) {
+        restoreController.current?.abort();
+        restoreController.current = null;
+        setConnection(null);
+        setRestoreError(false);
+        pendingDeck.current = undefined;
+        pendingCards.current = undefined;
+        if (reason === 'external-login') {
+          setRestoring(true);
+          setRestoreAttempt((value) => value + 1);
+        } else {
+          setRestoring(false);
+          if (reason === 'expired') setSyncError('errors.sessionExpired');
         }
-      })
-      .catch((error: unknown) => {
+        return;
+      }
+      if (inFlight.current && reason === 'login') return;
+      if (connectionRef.current && connectionRef.current.session.account.id !== session.account.id) {
+        restoreController.current?.abort();
+        restoreController.current = null;
+        setConnection(null);
+        pendingDeck.current = undefined;
+        pendingCards.current = undefined;
+        setRestoreError(false);
+        setRestoring(true);
+        setRestoreAttempt((value) => value + 1);
+        return;
+      }
+      if (connectionRef.current?.session.account.id === session.account.id) {
+        setConnection((current) => current?.session.account.id === session.account.id ? { ...current, session } : current);
+      } else if (!restoreController.current && !inFlight.current) {
+        setRestoring(true);
+        setRestoreAttempt((value) => value + 1);
+      }
+    });
+    return () => { unsubscribe(); stopLifecycle(); };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    restoreController.current = controller;
+    setRestoring(true);
+    setRestoreError(false);
+    void (async () => {
+      try {
+        const saved = await restoreSession();
+        if (controller.signal.aborted || !saved) return;
+        const [library, account] = await Promise.all([
+          fetchStudy(saved.accessToken, controller.signal),
+          fetchAccount(saved.accessToken, controller.signal),
+        ]);
+        if (!controller.signal.aborted) {
+          const active = readSession();
+          if (active?.account.id === saved.account.id) setConnection({ session: { ...active, account }, library });
+        }
+      } catch (error) {
         if (controller.signal.aborted) return;
         if (error instanceof ApiError && error.status === 401) {
           rememberSession(null);
-          setSavedSession(null);
           setSyncError('errors.sessionExpired');
-        } else {
-          setRestoreError(true);
+        } else if (hasSavedAccount()) setRestoreError(true);
+      } finally {
+        if (restoreController.current === controller) {
+          restoreController.current = null;
+          if (!controller.signal.aborted) setRestoring(false);
         }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setRestoring(false);
-      });
-    return () => controller.abort();
-  }, [savedSession, restoreAttempt]);
+      }
+    })();
+    return () => { controller.abort(); if (restoreController.current === controller) restoreController.current = null; };
+  }, [restoreAttempt]);
+
+  useEffect(() => {
+    if (!restoreError) return;
+    const reconnect = () => { setRestoreAttempt((value) => value + 1); };
+    window.addEventListener('online', reconnect);
+    return () => window.removeEventListener('online', reconnect);
+  }, [restoreError]);
 
   useEffect(() => {
     function onStorage(event: StorageEvent) {
@@ -104,8 +160,10 @@ export function useStudyData() {
   }
 
   function continueAsGuest() {
-    rememberSession(null);
-    setSavedSession(null);
+    restoreController.current?.abort();
+    restoreController.current = null;
+    suspendSession();
+    setRestoring(false);
     setRestoreError(false);
   }
 
@@ -143,7 +201,7 @@ export function useStudyData() {
         if (local.changed) await importStudy(session.accessToken, local.data);
         library = await fetchStudy(session.accessToken);
       } catch {
-        void endSession(session.accessToken).catch(() => undefined);
+        if (readSession()?.account.id === session.account.id) void endSession(session.accessToken).catch(() => undefined);
         const message = t(local.changed ? 'errors.import' : 'errors.studyRestore');
         throw new Error(action === 'signup' ? `${t('errors.signupDone')} ${message}` : message);
       }
@@ -164,10 +222,11 @@ export function useStudyData() {
           setSyncError('errors.localCleanup');
         }
       }
-      rememberSession(session);
+      const active = readSession();
+      if (!active || active.account.id !== session.account.id) throw new ApiError(409, '', 'SESSION_CHANGED');
       pendingDeck.current = undefined;
       pendingCards.current = undefined;
-      setConnection({ session, library });
+      setConnection({ session: active, library });
       return local.changed;
     } finally {
       inFlight.current = false;
@@ -177,7 +236,6 @@ export function useStudyData() {
   function clearAccount() {
     rememberSession(null);
     setConnection(null);
-    setSavedSession(null);
     pendingDeck.current = undefined;
     pendingCards.current = undefined;
   }
@@ -240,7 +298,7 @@ export function useStudyData() {
         setGuest(next);
         return true;
       } catch (error) {
-        setSyncError(error instanceof MissingStudyCard ? error.messageKey : 'errors.localSave');
+        setSyncError(error instanceof MissingStudyItem ? error.messageKey : 'errors.localSave');
         return false;
       }
     }
@@ -259,9 +317,12 @@ export function useStudyData() {
       setConnection((current) => current && { ...current, library: apply(current.library) });
       return true;
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'SESSION_CHANGED') return false;
       if (error instanceof ApiError && error.status === 401) {
-        clearAccount();
-        setSyncError('errors.sessionExpired');
+        if (!readSession()) {
+          clearAccount();
+          setSyncError('errors.sessionExpired');
+        }
       } else {
         const status = error instanceof ApiError ? error.status : undefined;
         const message = status === 404
@@ -296,6 +357,43 @@ export function useStudyData() {
     return saved ? id : null;
   }
 
+  function editDeck(deckId: string, content: DeckContent) {
+    return updateStudy(
+      (data) => {
+        if (!data.decks.some((deck) => deck.id === deckId)) throw new MissingStudyItem('errors.deckEditMissing');
+        // 덱 표시 정보만 변경하며 카드·복습 기록과 일정은 그대로 둔다.
+        return { ...data, decks: data.decks.map((deck) => deck.id === deckId ? { ...deck, ...content } : deck) };
+      },
+      async (token) => {
+        const edited = await editStudyDeck(token, deckId, content);
+        return (library) => ({ ...library, decks: mergeById(library.decks, [edited]) });
+      },
+    );
+  }
+
+  async function deleteDeck(deckId: string) {
+    const saved = await updateStudy(
+      (data) => {
+        const removed = new Set(data.cards.filter((card) => card.deckId === deckId).map((card) => card.id));
+        return {
+          decks: data.decks.filter((deck) => deck.id !== deckId),
+          cards: data.cards.filter((card) => card.deckId !== deckId),
+          logs: data.logs.filter((log) => !removed.has(log.cardId)),
+        };
+      },
+      async (token) => {
+        await deleteStudyDeck(token, deckId);
+        return (library) => ({
+          ...library,
+          decks: library.decks.filter((deck) => deck.id !== deckId),
+          cards: library.cards.filter((card) => card.deckId !== deckId),
+        });
+      },
+    );
+    if (saved && connection) setActivityVersion((value) => value + 1);
+    return saved;
+  }
+
   async function createCards(deckId: string, drafts: CardDraft[]) {
     const key = JSON.stringify({ deckId, drafts });
     const ids = pendingCards.current?.key === key ? pendingCards.current.ids : drafts.map(newStudyId);
@@ -318,7 +416,7 @@ export function useStudyData() {
     return updateStudy(
       (data) => {
         if (!data.cards.some((card) => card.id === cardId)) {
-          throw new MissingStudyCard('errors.editMissing');
+          throw new MissingStudyItem('errors.editMissing');
         }
         return {
           ...data,
@@ -354,7 +452,7 @@ export function useStudyData() {
       (data) => {
         if (data.logs.some((item) => item.id === id)) return data;
         if (!data.cards.some((card) => card.id === cardId)) {
-          throw new MissingStudyCard('errors.reviewMissing');
+          throw new MissingStudyItem('errors.reviewMissing');
         }
         const logs = [...data.logs, log];
         if (mode !== 'scheduled') return { ...data, logs };
@@ -387,6 +485,8 @@ export function useStudyData() {
     cards,
     studyLogs,
     createDeck,
+    editDeck,
+    deleteDeck,
     createCards,
     editCard,
     deleteCard,

@@ -7,6 +7,8 @@ import { AppHeader, BottomNav } from './components/Navigation';
 import { AccountModal } from './components/dialogs/AccountModal';
 import { CreateCardModal } from './components/dialogs/CreateCardModal';
 import { CreateDeckModal } from './components/dialogs/CreateDeckModal';
+import { DeleteDeckModal } from './components/dialogs/DeleteDeckModal';
+import { EditDeckModal } from './components/dialogs/EditDeckModal';
 import { DeleteCardModal } from './components/dialogs/DeleteCardModal';
 import { EditCardModal } from './components/dialogs/EditCardModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
@@ -27,7 +29,7 @@ import { getReviewWeek, type DailyCounts } from './study/insights';
 import { localDay, today } from './study/review';
 import { activityPath } from './api/study';
 import type { AccountAction } from './api/account';
-import type { CardContent, CardDraft, DeckTheme, Page } from './types';
+import type { CardContent, CardDraft, DeckContent, DeckTheme, Page } from './types';
 
 type AppModal =
   | 'deck'
@@ -36,7 +38,8 @@ type AppModal =
   | 'settings'
   | 'withdraw-account'
   | 'free-review'
-  | { type: 'edit-card' | 'delete-card'; cardId: string };
+  | { type: 'edit-card' | 'delete-card'; cardId: string }
+  | { type: 'edit-deck' | 'delete-deck'; deckId: string };
 
 export default function App() {
   const { t } = useLanguage();
@@ -71,7 +74,10 @@ export default function App() {
   const todayReviews = activity?.[today()]?.total ?? 0;
   const selectedDeck = decks.find((deck) => deck.id === openDeckId) || decks[0];
   const selectedCards = cards.filter((card) => card.deckId === selectedDeck?.id);
-  const cardModal = modal && typeof modal === 'object' ? modal : null;
+  const itemModal = modal && typeof modal === 'object' ? modal : null;
+  const cardModal = itemModal && 'cardId' in itemModal ? itemModal : null;
+  const deckModal = itemModal && 'deckId' in itemModal ? itemModal : null;
+  const actionDeck = deckModal ? decks.find((deck) => deck.id === deckModal.deckId) : undefined;
   const actionCard = cardModal ? cards.find((card) => card.id === cardModal.cardId) : undefined;
   const reviewTheme = decks.find((deck) => deck.id === review.current?.deckId)?.theme;
 
@@ -195,6 +201,21 @@ export default function App() {
     setNotice(['decks.created']);
   }
 
+  async function editDeck(deckId: string, content: DeckContent) {
+    if (!(await study.editDeck(deckId, content))) return;
+    setModal(null);
+    setNotice(['decks.edited']);
+  }
+
+  async function deleteDeck(deckId: string) {
+    if (!(await study.deleteDeck(deckId))) return;
+    setModal(null);
+    setOpenDeckId(undefined);
+    setPage('decks');
+    setStatsFilters((current) => current.deckId === deckId ? { ...current, deckId: null } : current);
+    setNotice(['decks.deleted']);
+  }
+
   async function addCards(deckId: string, drafts: CardDraft[]) {
     if (!(await study.createCards(deckId, drafts))) return;
     setModal(null);
@@ -300,7 +321,14 @@ export default function App() {
               )}
               {page === 'deck-detail' && selectedDeck && (
                 <DeckDetailPage
+                  key={selectedDeck.id}
                   deck={selectedDeck}
+                  logs={studyLogs}
+                  token={token}
+                  activityVersion={activityVersion}
+                  saving={saving}
+                  onEditDeck={() => setModal({ type: 'edit-deck', deckId: selectedDeck.id })}
+                  onDeleteDeck={() => setModal({ type: 'delete-deck', deckId: selectedDeck.id })}
                   cards={selectedCards}
                   back={() => navigate('decks')}
                   onAdd={() => setModal('card')}
@@ -427,6 +455,14 @@ export default function App() {
             />
           )}
           {modal === 'deck' && <CreateDeckModal onClose={closeEditor} onCreate={addDeck} saving={saving} />}
+          {deckModal?.type === 'edit-deck' && actionDeck && (
+            <EditDeckModal key={actionDeck.id} deck={actionDeck} saving={saving} onClose={closeEditor}
+              onSave={(content) => editDeck(actionDeck.id, content)} />
+          )}
+          {deckModal?.type === 'delete-deck' && actionDeck && (
+            <DeleteDeckModal deck={actionDeck} count={cards.filter((card) => card.deckId === actionDeck.id).length}
+              saving={saving} onClose={closeEditor} onDelete={() => deleteDeck(actionDeck.id)} />
+          )}
           {modal === 'card' && (
             <CreateCardModal
               decks={decks}

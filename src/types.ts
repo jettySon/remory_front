@@ -2,6 +2,7 @@ export type Page = 'home' | 'decks' | 'review' | 'calendar' | 'stats' | 'deck-de
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
 export type DeckTheme = 'peach' | 'lavender' | 'butter' | 'blue';
 export type Deck = { id: string; title: string; subtitle: string; theme: DeckTheme; icon: string };
+export type DeckContent = Pick<Deck, 'title' | 'subtitle' | 'theme'>;
 export type StudyCard = {
   id: string;
   deckId: string;

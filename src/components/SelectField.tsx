@@ -36,7 +36,7 @@ export default function SelectField<Value extends string>({ label, value, option
 
   function openAt(index: number) {
     const field = fieldRef.current;
-    const sheet = field?.closest('[role="dialog"]');
+    const sheet = field?.closest('[role="dialog"], .app-scroll');
     if (field && sheet) {
       const bounds = field.getBoundingClientRect();
       const dialog = sheet.getBoundingClientRect();

@@ -5,6 +5,7 @@ import {
   type ResetChallenge, type ResetVerification,
 } from '../api/passwordReset';
 import { ApiError } from '../api/request';
+import { revokeAccountSession } from '../api/session';
 import { useLanguage } from '../i18n/LanguageProvider';
 import type { MessageKey } from '../i18n/messages';
 import { Form, Field } from './Form';
@@ -124,6 +125,7 @@ export function PasswordResetRequest({ initialEmail = '', onBack }: {
           <NewPasswordForm pending={pending} error={error} onInput={() => setError(null)}
             onConfirm={(password) => void run(async () => {
               await confirmPasswordReset(verification.resetToken, password);
+              revokeAccountSession(email);
               setVerification(null);
               setChallenge(null);
               setDone(true);

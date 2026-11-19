@@ -1,5 +1,5 @@
 import type { DailyCounts, RatingCounts } from '../study/insights';
-import type { CardContent, CardDraft, Deck, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
+import type { CardContent, CardDraft, Deck, DeckContent, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 import { request } from './request';
 
 export type StudyLibrary = { decks: Deck[]; cards: StudyCard[] };
@@ -19,6 +19,10 @@ export const fetchStudy = (token: string, signal?: AbortSignal) =>
 export const importStudy = (token: string, data: StudyData) =>
   request<void>('/study/import', 'POST', token, data);
 export const saveDeck = (token: string, deck: Deck) => request<Deck>('/study/decks', 'POST', token, deck);
+export const editStudyDeck = (token: string, deckId: string, content: DeckContent) =>
+  request<Deck>(`/study/decks/${encodeURIComponent(deckId)}`, 'PATCH', token, content);
+export const deleteStudyDeck = (token: string, deckId: string) =>
+  request<void>(`/study/decks/${encodeURIComponent(deckId)}`, 'DELETE', token);
 export const saveCards = (token: string, deckId: string, cards: NewCard[]) =>
   request<StudyCard[]>(`/study/decks/${encodeURIComponent(deckId)}/cards`, 'POST', token, { cards });
 export const editStudyCard = (token: string, cardId: string, content: CardContent) =>

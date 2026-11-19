@@ -4,7 +4,7 @@ import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowLeft, UserRoundX } from 'lucide-react';
 import { deleteAccountFromWeb } from './api/account';
-import { readSession, rememberSession } from './api/session';
+import { readAccountHint, rememberSession } from './api/session';
 import { LanguageField } from './components/LanguageField';
 import { AccountDeletionForm } from './components/AccountDeletionForm';
 import { useStoredState } from './hooks/useStoredState';
@@ -17,13 +17,13 @@ function AccountDeletionPage() {
 
   async function withdraw(email: string, password: string) {
     await deleteAccountFromWeb(email, password);
-    if (readSession()?.account.email === email.trim().toLowerCase()) rememberSession(null);
+    if (readAccountHint()?.email === email.trim().toLowerCase()) rememberSession(null);
     setDeleted(true);
   }
 
   async function withdrawGoogle(proof: GoogleProof) {
     const account = await deleteWithGoogleFromWeb(proof);
-    if (readSession()?.account.id === account.id) rememberSession(null);
+    if (readAccountHint()?.id === account.id) rememberSession(null);
     setDeleted(true);
   }
 

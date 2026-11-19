@@ -569,7 +569,7 @@ button { border: 0; }
 }
 [data-theme="dark"] .month-heading button { background: #514069; color: #f4e4ff; }
 
-.sheet-form, .stats-page, .language-setting {
+.sheet-form, .stats-page, .language-setting, .card-search-controls {
   --field-label: #6c587c;
   --field-ink: #594968;
   --field-hint: #75647e;
@@ -580,7 +580,7 @@ button { border: 0; }
   --field-focus: #9e7fbd;
   --menu-shadow: #50366129;
 }
-[data-theme="dark"] :is(.sheet-form, .stats-page, .language-setting) {
+[data-theme="dark"] :is(.sheet-form, .stats-page, .language-setting, .card-search-controls) {
   --field-label: #ede0f2;
   --field-ink: #f5eafa;
   --field-hint: #c6b4d0;
@@ -1323,3 +1323,45 @@ button { border: 0; }
 .reset-password-actions .account-help-link { width: 100%; min-width: 0; min-height: 44px; justify-self: stretch; justify-content: center; margin: 0; padding: 10px 4px; font-size: 12px; text-align: center; }
 .reset-password-actions .account-help-link svg { flex: none; }
 .reset-password-actions .account-help-link:disabled { opacity: .55; }
+
+
+/* Deck management and card discovery */
+.deck-detail-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.deck-detail-toolbar .back-link { margin: 0; min-height: 44px; }
+.deck-manage-actions { display: flex; gap: 6px; }
+.deck-manage-actions button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 16px; color: #886c9c; background: #f3eaf8; }
+.deck-manage-actions button:disabled { opacity: .5; }
+.deck-form-fields { display: flex; flex-direction: column; gap: 18px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.deck-form-fields .color-choices { margin-top: 12px; }
+.deck-edit-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.deck-delete-preview { margin: 0; }
+.deck-delete-preview > span { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.deck-delete-preview small { color: var(--muted); font-size: 12px; }
+.deck-detail-banner h1, .deck-detail-banner p { overflow-wrap: anywhere; max-width: calc(100% - 96px); }
+.deck-theme-preview { overflow-wrap: anywhere; }
+.card-search-controls { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.card-search-field { margin: 0; padding: 0 14px; min-height: 48px; }
+.card-search-field > svg { flex: none; }
+.card-search-field input { min-height: 48px; width: 100%; }
+.card-search-field input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.card-search-field:focus-within { outline: 2px solid #bea4d7; outline-offset: 2px; }
+.card-search-field button { flex: none; display: grid; place-items: center; width: 36px; height: 44px; margin-right: -8px; border-radius: 12px; background: transparent; color: var(--accent); }
+.card-filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card-filter-row .select-field { min-width: 0; }
+.card-filter-row label { color: var(--field-label); font-size: 12px; font-weight: 650; }
+.card-filter-row .select-trigger { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 15px; background: var(--field-background); color: var(--field-ink); font-size: 12px; }
+.card-filter-row .select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-filter-row .select-options { min-width: 100%; width: max-content; max-width: min(260px, calc(100vw - 48px)); font-size: 12px; }
+.card-filter-row .select-field:last-child .select-options { left: auto; right: 0; }
+.card-filter-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.card-filter-meta small { flex: 1 1 170px; font-size: 11px; line-height: 1.7; color: var(--muted); }
+.card-filter-meta .plain-link { margin: 0 0 0 auto; min-height: 36px; font-size: 11px; }
+.card-results-count { margin: 4px 0 12px; color: var(--muted); font-size: 11px; }
+.card-query-state { padding: 24px 8px; text-align: center; font-size: 12px; }
+.card-query-state .plain-link, .card-search-empty .plain-link { min-height: 44px; }
+.card-search-empty { gap: 8px; text-align: center; }
+.card-search-empty p { margin: 0; line-height: 1.7; }
+.list-card-content strong { overflow-wrap: anywhere; }
+[data-theme="dark"] .deck-manage-actions button { background: #423050; color: #e2c8f0; }
+
+.card-filter-row .select-option { font-size: 12px; }
