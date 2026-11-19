@@ -1,3 +1,5 @@
+import { GuestImportOptions } from '../GuestImportOptions';
+import type { GuestImportPreference } from '../../study/guestData';
 import { PasswordResetRequest } from '../PasswordResetRequest';
 import { GoogleSignInButton } from '../GoogleSignInButton';
 import { googleErrorMessage, type GoogleProof } from '../../api/google';
@@ -20,8 +22,8 @@ export function AccountModal({
 }: {
   account?: Account;
   guestPending: boolean;
-  onAuthenticate: (action: AccountAction, email: string, password: string) => Promise<void>;
-  onGoogleAuthenticate: (proof: GoogleProof, password?: string) => Promise<void>;
+  onAuthenticate: (action: AccountAction, email: string, password: string, preference: GuestImportPreference) => Promise<void>;
+  onGoogleAuthenticate: (proof: GoogleProof, password: string | undefined, preference: GuestImportPreference) => Promise<void>;
   onLogout: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -32,6 +34,7 @@ export function AccountModal({
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [guestPreference, setGuestPreference] = useState<GuestImportPreference>('keep');
   const working = useRef(false);
   const isSignup = mode === 'signup';
   const isReset = mode === 'reset';
@@ -67,17 +70,17 @@ export function AccountModal({
     event.preventDefault();
     if (linkProof) {
       const password = String(new FormData(event.currentTarget).get('password') ?? '');
-      void run(() => onGoogleAuthenticate(linkProof, password));
+      void run(() => onGoogleAuthenticate(linkProof, password, guestPreference));
       return;
     }
     const password = String(new FormData(event.currentTarget).get('password') ?? '');
-    void run(() => onAuthenticate(isSignup ? 'signup' : 'login', email, password));
+    void run(() => onAuthenticate(isSignup ? 'signup' : 'login', email, password, guestPreference));
   }
 
   async function signInWithGoogle(proof: GoogleProof) {
     await run(async () => {
       try {
-        await onGoogleAuthenticate(proof);
+        await onGoogleAuthenticate(proof, undefined, guestPreference);
       } catch (error) {
         if (error instanceof ApiError && error.code === 'GOOGLE_LINK_REQUIRED') {
           setLinkProof(proof);
@@ -136,6 +139,7 @@ export function AccountModal({
         </p>
         <Mascot className="account-mascot" />
       </div>
+      {guestPending && <GuestImportOptions value={guestPreference} onChange={setGuestPreference} disabled={pending} />}
       {!linkProof && (
         <>
           <GoogleSignInButton onCredential={signInWithGoogle} disabled={pending} />
@@ -172,7 +176,7 @@ export function AccountModal({
             name="email"
             autoComplete="email"
             autoCapitalize="none"
-            autoFocus
+            autoFocus={!guestPending}
             disabled={pending}
             required
             value={email}

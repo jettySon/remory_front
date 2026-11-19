@@ -28,6 +28,7 @@ import { StatsPage, type StatsFilters } from './pages/StatsPage';
 import { getReviewWeek, type DailyCounts } from './study/insights';
 import { localDay, today } from './study/review';
 import { activityPath } from './api/study';
+import type { GuestImportPreference } from './study/guestData';
 import type { AccountAction } from './api/account';
 import type { CardContent, CardDraft, DeckContent, DeckTheme, Page } from './types';
 
@@ -106,15 +107,15 @@ export default function App() {
     setStatsFilters({ period: 'all', deckId: null });
   }
 
-  async function connectAccount(action: AccountAction, email: string, password: string) {
-    const imported = await study.connect(action, email, password);
+  async function connectAccount(action: AccountAction, email: string, password: string, preference: GuestImportPreference) {
+    const imported = await study.connect(action, email, password, preference);
     afterAccountChange();
     if (imported) setNotice(['account.imported']);
     else setNotice([action === 'signup' ? 'account.signedUp' : 'account.loggedIn']);
   }
 
-  async function connectGoogleAccount(proof: GoogleProof, password?: string) {
-    const imported = await study.connectGoogle(proof, password);
+  async function connectGoogleAccount(proof: GoogleProof, password: string | undefined, preference: GuestImportPreference) {
+    const imported = await study.connectGoogle(proof, password, preference);
     afterAccountChange();
     setNotice([imported ? 'account.imported' : 'account.loggedIn']);
   }

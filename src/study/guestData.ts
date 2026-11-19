@@ -5,6 +5,8 @@ const guestKey = 'remory-guest-v2';
 const legacyExampleDeckIds = new Set(['english', 'java', 'history', 'general']);
 const legacyExampleCardIds = new Set(['c1', 'c2', 'c3', 'c4', 'c5', 'c6']);
 
+export type GuestImportPreference = 'import' | 'keep';
+
 export type GuestStudy = { data: StudyData; changed: boolean };
 
 export function newGuestStudy(): GuestStudy {

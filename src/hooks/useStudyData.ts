@@ -25,7 +25,7 @@ import {
   type StudyData,
   type StudyLibrary,
 } from '../api/study';
-import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy } from '../study/guestData';
+import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy, type GuestImportPreference } from '../study/guestData';
 import { newStudyId } from '../study/review';
 import { nextReviewAt } from '../study/reviewScheduler';
 import type { CardContent, CardDraft, Deck, DeckContent, Rating, ReviewLog, ReviewMode } from '../types';
@@ -167,15 +167,17 @@ export function useStudyData() {
     setRestoreError(false);
   }
 
-  function connect(action: AccountAction, email: string, password: string) {
-    return connectSession(action, () => authenticate(action, email, password));
+  function connect(action: AccountAction, email: string, password: string, preference: GuestImportPreference) {
+    return connectSession(action, () => authenticate(action, email, password), preference);
   }
 
-  function connectGoogle(proof: GoogleProof, password?: string) {
-    return connectSession('google', () => authenticateGoogle(proof, password));
+  function connectGoogle(proof: GoogleProof, password: string | undefined, preference: GuestImportPreference) {
+    return connectSession('google', () => authenticateGoogle(proof, password), preference);
   }
 
-  async function connectSession(action: AccountAction | 'google', signIn: () => Promise<Session>) {
+  async function connectSession(
+    action: AccountAction | 'google', signIn: () => Promise<Session>, preference: GuestImportPreference,
+  ) {
     if (inFlight.current) throw new Error(t('account.connecting'));
     inFlight.current = true;
     try {
@@ -196,17 +198,19 @@ export function useStudyData() {
       }
 
       const local = readGuestStudy();
+      // 가져오기를 선택한 경우에만 전송·정리한다. 로그인 복원에서는 자동 이관하지 않는다.
+      const shouldImport = preference === 'import' && local.changed;
       let library: StudyLibrary;
       try {
-        if (local.changed) await importStudy(session.accessToken, local.data);
+        if (shouldImport) await importStudy(session.accessToken, local.data);
         library = await fetchStudy(session.accessToken);
       } catch {
         if (readSession()?.account.id === session.account.id) void endSession(session.accessToken).catch(() => undefined);
-        const message = t(local.changed ? 'errors.import' : 'errors.studyRestore');
+        const message = t(shouldImport ? 'errors.import' : 'errors.studyRestore');
         throw new Error(action === 'signup' ? `${t('errors.signupDone')} ${message}` : message);
       }
 
-      if (local.changed) {
+      if (shouldImport) {
         try {
           // 서버 저장을 확인한 뒤, 이관 중 다른 탭에서 새 기록을 추가했는지도 확인한다.
           const latest = readGuestStudy();
@@ -222,12 +226,14 @@ export function useStudyData() {
           setSyncError('errors.localCleanup');
         }
       }
+      // 로그인 중 다른 탭에서 추가한 비회원 기록도 로그아웃 후 바로 표시한다.
+      if (!shouldImport) setGuest(readGuestStudy());
       const active = readSession();
       if (!active || active.account.id !== session.account.id) throw new ApiError(409, '', 'SESSION_CHANGED');
       pendingDeck.current = undefined;
       pendingCards.current = undefined;
       setConnection({ session: active, library });
-      return local.changed;
+      return shouldImport;
     } finally {
       inFlight.current = false;
     }

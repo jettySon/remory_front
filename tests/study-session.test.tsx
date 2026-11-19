@@ -65,7 +65,7 @@ describe('study data with persistent sessions',()=>{
     expect(vi.mocked(fetch).mock.calls.filter(call=>String(call[0]).endsWith('/auth/refresh'))).toHaveLength(refreshCount);
   });
 
-  it('keeps the existing guest import and clears local records only after server confirmation',async()=>{
+  it('imports guest records only when selected and clears them after server confirmation',async()=>{
     const guestDeck=deck('guest-deck');
     writeGuestStudy({changed:true,data:{decks:[guestDeck],cards:[],logs:[]}});
     vi.mocked(fetch).mockImplementation(async path=>{
@@ -78,7 +78,7 @@ describe('study data with persistent sessions',()=>{
     await render();
     expect(state.account).toBeUndefined();
     let imported=false;
-    await act(async()=>{imported=await state.connect('login','account-a@example.com','dummy-password');});
+    await act(async()=>{imported=await state.connect('login','account-a@example.com','dummy-password','import');});
     expect(imported).toBe(true);
     expect(state.account?.id).toBe('account-a');
     expect(state.decks[0].id).toBe('guest-deck');
@@ -96,7 +96,7 @@ describe('study data with persistent sessions',()=>{
       throw new Error('Unexpected test API');
     });
     await render();
-    await act(async()=>{await expect(state.connect('login','account-a@example.com','dummy-password')).rejects.toThrow();});
+    await act(async()=>{await expect(state.connect('login','account-a@example.com','dummy-password','import')).rejects.toThrow();});
     expect(readGuestStudy().changed).toBe(true);
     expect(readGuestStudy().data.decks[0].id).toBe('guest-deck');
     expect(state.account).toBeUndefined();

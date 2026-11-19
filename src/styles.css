@@ -1365,3 +1365,19 @@ button { border: 0; }
 [data-theme="dark"] .deck-manage-actions button { background: #423050; color: #e2c8f0; }
 
 .card-filter-row .select-option { font-size: 12px; }
+
+
+/* Guest records stay separate unless importing is explicitly selected. */
+.guest-import-options { display: grid; gap: 8px; min-width: 0; margin: 0 0 22px; padding: 0; border: 0; }
+.guest-import-options legend { margin-bottom: 10px; padding: 0; color: var(--ink); font-size: 12px; font-weight: 700; }
+.guest-import-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #ece2f0; border-radius: 16px; background: #fdf9fe; cursor: pointer; }
+.guest-import-option:has(input:checked) { border-color: #bda5cf; background: #f2eafa; }
+.guest-import-option input { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); }
+.guest-import-option > span { display: grid; gap: 4px; min-width: 0; }
+.guest-import-option strong { color: var(--ink); font-size: 12px; line-height: 1.6; font-weight: 700; }
+.guest-import-option small { color: #86718e; font-size: 11px; line-height: 1.65; overflow-wrap: anywhere; }
+.guest-import-options:disabled { opacity: .6; }
+.guest-import-options:disabled label { cursor: default; }
+[data-theme="dark"] .guest-import-option { border-color: var(--night-border); background: var(--night-panel); }
+[data-theme="dark"] .guest-import-option:has(input:checked) { border-color: #9277a6; background: #42304f; }
+[data-theme="dark"] .guest-import-option small { color: var(--muted); }
