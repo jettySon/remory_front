@@ -2,6 +2,7 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -27,7 +28,8 @@ export async function request<T>(
   if (!response.ok) {
     const problem = await response.json().catch(() => null);
     const detail = response.status < 500 && typeof problem?.detail === 'string' ? problem.detail : '';
-    throw new ApiError(response.status, detail);
+    const code = typeof problem?.code === 'string' ? problem.code : undefined;
+    throw new ApiError(response.status, detail, code);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

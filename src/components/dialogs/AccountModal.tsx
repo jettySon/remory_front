@@ -1,3 +1,6 @@
+import { GoogleSignInButton } from '../GoogleSignInButton';
+import { googleErrorMessage, type GoogleProof } from '../../api/google';
+import { ApiError } from '../../api/request';
 import { Form, Field } from '../Form';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { useRef, useState, type FormEvent } from 'react';
@@ -10,18 +13,21 @@ export function AccountModal({
   account,
   guestPending,
   onAuthenticate,
+  onGoogleAuthenticate,
   onLogout,
   onClose,
 }: {
   account?: Account;
   guestPending: boolean;
   onAuthenticate: (action: AccountAction, email: string, password: string) => Promise<void>;
+  onGoogleAuthenticate: (proof: GoogleProof, password?: string) => Promise<void>;
   onLogout: () => Promise<void>;
   onClose: () => void;
 }) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [email, setEmail] = useState('');
+  const [linkProof, setLinkProof] = useState<GoogleProof | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -33,6 +39,7 @@ export function AccountModal({
   function changeMode(next: typeof mode) {
     if (working.current || mode === next) return;
     setMode(next);
+    setLinkProof(null);
     setShowPassword(false);
     setFeedback('');
   }
@@ -45,7 +52,10 @@ export function AccountModal({
     try {
       await action();
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : t('errors.tryLater'));
+      const message = error instanceof ApiError
+        ? t(googleErrorMessage(error))
+        : error instanceof Error ? error.message : t('errors.tryLater');
+      setFeedback(message);
     } finally {
       working.current = false;
       setPending(false);
@@ -54,12 +64,32 @@ export function AccountModal({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (linkProof) {
+      const password = String(new FormData(event.currentTarget).get('password') ?? '');
+      void run(() => onGoogleAuthenticate(linkProof, password));
+      return;
+    }
     if (isReset) {
       setFeedback(t('account.resetUnavailable'));
       return;
     }
     const password = String(new FormData(event.currentTarget).get('password') ?? '');
     void run(() => onAuthenticate(isSignup ? 'signup' : 'login', email, password));
+  }
+
+  async function signInWithGoogle(proof: GoogleProof) {
+    await run(async () => {
+      try {
+        await onGoogleAuthenticate(proof);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === 'GOOGLE_LINK_REQUIRED') {
+          setLinkProof(proof);
+          setMode('login');
+          return;
+        }
+        throw error;
+      }
+    });
   }
 
   function close() {
@@ -77,6 +107,7 @@ export function AccountModal({
           </p>
           <Mascot className="account-mascot" />
         </div>
+        {account.googleLinked && <p className="google-linked">{t('google.linked')}</p>}
         <button className="big-primary" type="button" disabled={pending} onClick={() => void run(onLogout)}>
           {pending ? t('account.loggingOut') : t('account.logout')}
         </button>
@@ -89,7 +120,7 @@ export function AccountModal({
     );
 
   return (
-    <Modal title={isReset ? t('account.reset') : t('account.title')} onClose={close}>
+    <Modal title={linkProof ? t('google.linkTitle') : isReset ? t('account.reset') : t('account.title')} onClose={close}>
       <div className="account-intro">
         <p>
           <strong>{t('account.saveHistoryTitle')}</strong>
@@ -100,7 +131,15 @@ export function AccountModal({
         </p>
         <Mascot className="account-mascot" />
       </div>
-      {isReset ? (
+      {!isReset && !linkProof && (
+        <>
+          <GoogleSignInButton onCredential={signInWithGoogle} disabled={pending} />
+          <div className="account-divider"><span>{t('google.orEmail')}</span></div>
+        </>
+      )}
+      {linkProof ? (
+        <p className="account-reset-guide">{t('google.linkHint')}</p>
+      ) : isReset ? (
         <p className="account-reset-guide">{t('account.resetGuide')}</p>
       ) : (
         <div className="entry-modes account-modes" role="group" aria-label={t('account.tabs')}>
@@ -122,8 +161,8 @@ export function AccountModal({
           </button>
         </div>
       )}
-      <Form key={mode} className="sheet-form account-form" onInput={() => setFeedback('')} onSubmit={submit}>
-        <label>
+      <Form key={linkProof ? 'google-link' : mode} className="sheet-form account-form" onInput={() => setFeedback('')} onSubmit={submit}>
+        {!linkProof && <label>
           {t('account.email')}
           <Field
             type="email"
@@ -137,7 +176,7 @@ export function AccountModal({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
           />
-        </label>
+        </label>}
         {!isReset && (
           <div className="account-password">
             <label htmlFor="account-password">{t('account.password')}</label>
@@ -146,6 +185,7 @@ export function AccountModal({
                 id="account-password"
                 name="password"
                 disabled={pending}
+                autoFocus={Boolean(linkProof)}
                 type={showPassword ? 'text' : 'password'}
                 autoComplete={isSignup ? 'new-password' : 'current-password'}
                 minLength={isSignup ? 8 : undefined}
@@ -173,7 +213,7 @@ export function AccountModal({
           </div>
         )}
         <button type="submit" className="big-primary form-submit" disabled={pending}>
-          {pending ? t('account.connecting') : action} <ArrowRight size={18} aria-hidden="true" />
+          {pending ? t('account.connecting') : linkProof ? t('google.linkConfirm') : action} <ArrowRight size={18} aria-hidden="true" />
         </button>
         {feedback && (
           <p className="account-feedback" role={isReset ? 'status' : 'alert'}>
@@ -181,7 +221,14 @@ export function AccountModal({
           </p>
         )}
       </Form>
-      {isReset ? (
+      {linkProof ? (
+        <button className="account-help-link" type="button" disabled={pending} onClick={() => {
+          setLinkProof(null);
+          setFeedback('');
+        }}>
+          {t('common.cancel')}
+        </button>
+      ) : isReset ? (
         <button className="account-help-link" type="button" onClick={() => changeMode('login')}>
           <ArrowLeft size={15} aria-hidden="true" /> {t('account.backToLogin')}
         </button>

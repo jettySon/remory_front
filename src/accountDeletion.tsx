@@ -1,3 +1,4 @@
+import { deleteWithGoogleFromWeb, type GoogleProof } from './api/google';
 import { LanguageProvider, useLanguage } from './i18n/LanguageProvider';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -20,6 +21,12 @@ function AccountDeletionPage() {
     setDeleted(true);
   }
 
+  async function withdrawGoogle(proof: GoogleProof) {
+    const account = await deleteWithGoogleFromWeb(proof);
+    if (readSession()?.account.id === account.id) rememberSession(null);
+    setDeleted(true);
+  }
+
   return (
     <div className="site-background" data-theme={theme}>
       <main className="phone-shell account-deletion-page">
@@ -39,7 +46,7 @@ function AccountDeletionPage() {
               {t('account.deleteSuccess')}
             </p>
           ) : (
-            <AccountDeletionForm onDelete={withdraw} />
+            <AccountDeletionForm onDelete={withdraw} onGoogleDelete={withdrawGoogle} />
           )}
         </div>
       </main>

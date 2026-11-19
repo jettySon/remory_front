@@ -1,6 +1,21 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'google.loading': "正在准备 Google 登录…",
+  'google.unavailable': "无法加载 Google 登录，请检查连接后重试。",
+  'google.failed': "Google 认证未完成，请重试。",
+  'google.restart': "本次认证已过期，请重新使用 Google 登录。",
+  'google.retryLogin': "登录信息已更改，请重新使用 Google 登录。",
+  'google.orEmail': "或使用邮箱继续",
+  'google.linkTitle': "关联 Google 账号",
+  'google.linkHint': "此邮箱已有 Remory 账号。验证原密码后即可关联 Google，并继续使用学习记录。",
+  'google.linkConfirm': "确认并关联",
+  'google.conflict': "此邮箱已关联其他 Google 账号，请使用原有方式登录。",
+  'google.notFound': "找不到与此 Google 账号关联的 Remory 账号。",
+  'google.mismatch': "请选择与当前 Remory 账号关联的 Google 账号。",
+  'google.deleteHint': "确认删除内容后，使用 Google 验证身份，即会永久删除账号和学习记录。",
+  'google.deleteMethod': "注册时使用的登录方式",
+  'google.linked': "已关联 Google 账号。",
   'validation.required': "请填写此项。",
   'validation.checked': "请勾选此项后继续。",
   'validation.email': "请输入有效的邮箱地址。",

@@ -1,3 +1,4 @@
+import type { GoogleProof } from './api/google';
 import { useLanguage } from './i18n/LanguageProvider';
 import type { Message } from './i18n/messages';
 import { useEffect, useRef, useState } from 'react';
@@ -104,6 +105,18 @@ export default function App() {
     afterAccountChange();
     if (imported) setNotice(['account.imported']);
     else setNotice([action === 'signup' ? 'account.signedUp' : 'account.loggedIn']);
+  }
+
+  async function connectGoogleAccount(proof: GoogleProof, password?: string) {
+    const imported = await study.connectGoogle(proof, password);
+    afterAccountChange();
+    setNotice([imported ? 'account.imported' : 'account.loggedIn']);
+  }
+
+  async function withdrawGoogleAccount(proof: GoogleProof) {
+    await study.withdrawGoogleAccount(proof);
+    closeSettings();
+    setNotice(['account.deleteSuccess']);
   }
 
   async function logout() {
@@ -396,6 +409,8 @@ export default function App() {
             >
               <AccountDeletionForm
                 email={account.email}
+                googleOnly={account.hasPassword === false}
+                onGoogleDelete={withdrawGoogleAccount}
                 onDelete={(_, password) => withdrawAccount(password)}
                 onCancel={() => setModal('settings')}
               />
@@ -406,6 +421,7 @@ export default function App() {
               account={account}
               guestPending={study.guestPending}
               onAuthenticate={connectAccount}
+              onGoogleAuthenticate={connectGoogleAccount}
               onLogout={logout}
               onClose={closeAccount}
             />

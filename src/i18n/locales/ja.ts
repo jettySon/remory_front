@@ -1,6 +1,21 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'google.loading': "Googleログインを準備しています…",
+  'google.unavailable': "Googleログインを読み込めませんでした。接続を確認して、もう一度お試しください。",
+  'google.failed': "Google認証を完了できませんでした。もう一度お試しください。",
+  'google.restart': "認証の有効期限が切れました。もう一度Googleでログインしてください。",
+  'google.retryLogin': "ログイン情報が変更されました。もう一度Googleでログインしてください。",
+  'google.orEmail': "またはメールアドレスで続ける",
+  'google.linkTitle': "Googleアカウントを連携",
+  'google.linkHint': "同じメールアドレスのRemoryアカウントがあります。既存のパスワードを確認すると、Googleと連携して学習記録を引き継げます。",
+  'google.linkConfirm': "確認して連携",
+  'google.conflict': "このメールアドレスには別のGoogleアカウントが連携されています。既存の方法でログインしてください。",
+  'google.notFound': "このGoogleアカウントに連携されたRemoryアカウントが見つかりませんでした。",
+  'google.mismatch': "ログイン中のRemoryアカウントに連携されたGoogleアカウントを選んでください。",
+  'google.deleteHint': "削除内容を確認してからGoogleで本人確認をすると、アカウントと学習記録が完全に削除されます。",
+  'google.deleteMethod': "登録時のログイン方法",
+  'google.linked': "Googleアカウントを連携済みです。",
   'validation.required': "内容を入力してください。",
   'validation.checked': "続けるには、この項目にチェックを入れてください。",
   'validation.email': "正しいメールアドレスを入力してください。",

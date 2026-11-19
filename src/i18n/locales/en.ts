@@ -1,6 +1,21 @@
 import type { MessageKey } from './ko';
 
 const messages = {
+  'google.loading': "Preparing Google sign-in…",
+  'google.unavailable': "Couldn’t load Google sign-in. Check your connection and try again.",
+  'google.failed': "Google sign-in didn’t complete. Please try again.",
+  'google.restart': "This sign-in attempt expired. Please continue with Google again.",
+  'google.retryLogin': "Your sign-in details changed. Please continue with Google again.",
+  'google.orEmail': "or continue with email",
+  'google.linkTitle': "Link your Google account",
+  'google.linkHint': "A Remory account already uses this email. Confirm its password to link Google and keep your study history.",
+  'google.linkConfirm': "Confirm and link",
+  'google.conflict': "Another Google account is linked to this email. Use your existing sign-in method.",
+  'google.notFound': "No Remory account is linked to this Google account.",
+  'google.mismatch': "Choose the Google account linked to your signed-in Remory account.",
+  'google.deleteHint': "After confirming below, continuing with Google will verify your identity and permanently delete your account and study history.",
+  'google.deleteMethod': "Sign-in method used to join",
+  'google.linked': "Your Google account is linked.",
   'validation.required': "Please fill in this field.",
   'validation.checked': "Please check this box to continue.",
   'validation.email': "Enter a valid email address.",

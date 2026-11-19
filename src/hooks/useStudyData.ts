@@ -3,6 +3,7 @@ import type { MessageKey } from '../i18n/messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   authenticate,
+  fetchAccount,
   deleteSignedInAccount,
   endSession,
   type AccountAction,
@@ -10,6 +11,7 @@ import {
 } from '../api/account';
 import { readSession, rememberSession } from '../api/session';
 import { ApiError } from '../api/request';
+import { authenticateGoogle, deleteSignedInWithGoogle, type GoogleProof } from '../api/google';
 import {
   deleteStudyCard,
   editStudyCard,
@@ -59,9 +61,16 @@ export function useStudyData() {
   useEffect(() => {
     if (!savedSession) return;
     const controller = new AbortController();
-    fetchStudy(savedSession.accessToken, controller.signal)
-      .then((library) => {
-        if (!controller.signal.aborted) setConnection({ session: savedSession, library });
+    Promise.all([
+      fetchStudy(savedSession.accessToken, controller.signal),
+      fetchAccount(savedSession.accessToken, controller.signal),
+    ])
+      .then(([library, account]) => {
+        if (!controller.signal.aborted) {
+          const session = { ...savedSession, account };
+          rememberSession(session);
+          setConnection({ session, library });
+        }
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -100,14 +109,23 @@ export function useStudyData() {
     setRestoreError(false);
   }
 
-  async function connect(action: AccountAction, email: string, password: string) {
-    if (inFlight.current) return;
+  function connect(action: AccountAction, email: string, password: string) {
+    return connectSession(action, () => authenticate(action, email, password));
+  }
+
+  function connectGoogle(proof: GoogleProof, password?: string) {
+    return connectSession('google', () => authenticateGoogle(proof, password));
+  }
+
+  async function connectSession(action: AccountAction | 'google', signIn: () => Promise<Session>) {
+    if (inFlight.current) throw new Error(t('account.connecting'));
     inFlight.current = true;
     try {
       let session: Session;
       try {
-        session = await authenticate(action, email, password);
+        session = await signIn();
       } catch (error) {
+        if (action === 'google') throw error;
         const status = error instanceof ApiError ? error.status : undefined;
         const message = status === 401
           ? 'errors.credentials'
@@ -169,6 +187,7 @@ export function useStudyData() {
     inFlight.current = true;
     try {
       await endSession(connection.session.accessToken);
+      window.google?.accounts.id.disableAutoSelect();
       clearAccount();
     } catch {
       throw new Error(t('errors.logout'));
@@ -177,7 +196,15 @@ export function useStudyData() {
     }
   }
 
-  async function withdrawAccount(password: string) {
+  function withdrawAccount(password: string) {
+    return withdraw((token) => deleteSignedInAccount(token, password));
+  }
+
+  function withdrawGoogleAccount(proof: GoogleProof) {
+    return withdraw((token) => deleteSignedInWithGoogle(token, proof));
+  }
+
+  async function withdraw(removeAccount: (token: string) => Promise<void>) {
     if (!connection || inFlight.current) {
       throw new ApiError(401, 'No active session');
     }
@@ -186,10 +213,10 @@ export function useStudyData() {
     setSaving(true);
     setSyncError('');
     try {
-      await deleteSignedInAccount(connection.session.accessToken, password);
+      await removeAccount(connection.session.accessToken);
       clearAccount();
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
+      if (error instanceof ApiError && error.status === 401 && !error.code?.startsWith('GOOGLE_')) {
         clearAccount();
         setSyncError('errors.sessionExpired');
       }
@@ -365,8 +392,10 @@ export function useStudyData() {
     deleteCard,
     recordReview,
     connect,
+    connectGoogle,
     disconnect,
     withdrawAccount,
+    withdrawGoogleAccount,
     account: connection?.session.account,
     token: connection?.session.accessToken,
     activityVersion,
