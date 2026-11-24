@@ -28,7 +28,8 @@ import {
 import { isStudyLog, newGuestStudy, readGuestStudy, writeGuestStudy, type GuestImportPreference } from '../study/guestData';
 import { newStudyId } from '../study/review';
 import { nextReviewAt } from '../study/reviewScheduler';
-import type { CardContent, CardDraft, Deck, DeckContent, Rating, ReviewLog, ReviewMode } from '../types';
+import { latestReviewsByCard } from '../study/latestReviews';
+import type { CardContent, CardDraft, Deck, DeckContent, FirstRecall, Rating, ReviewLog, ReviewMode } from '../types';
 
 type Connection = { session: Session; library: StudyLibrary };
 type StudyUpdate = (data: StudyData) => StudyData;
@@ -389,11 +390,16 @@ export function useStudyData() {
       },
       async (token) => {
         await deleteStudyDeck(token, deckId);
-        return (library) => ({
-          ...library,
-          decks: library.decks.filter((deck) => deck.id !== deckId),
-          cards: library.cards.filter((card) => card.deckId !== deckId),
-        });
+        return (library) => {
+          const cards = library.cards.filter((card) => card.deckId !== deckId);
+          const remaining = new Set(cards.map((card) => card.id));
+          return {
+            ...library,
+            decks: library.decks.filter((deck) => deck.id !== deckId),
+            cards,
+            latestReviews: (library.latestReviews ?? []).filter((log) => remaining.has(log.cardId)),
+          };
+        };
       },
     );
     if (saved && connection) setActivityVersion((value) => value + 1);
@@ -445,15 +451,20 @@ export function useStudyData() {
       }),
       async (token) => {
         await deleteStudyCard(token, cardId);
-        return (library) => ({ ...library, cards: library.cards.filter((card) => card.id !== cardId) });
+        return (library) => ({
+          ...library,
+          cards: library.cards.filter((card) => card.id !== cardId),
+          latestReviews: (library.latestReviews ?? []).filter((log) => log.cardId !== cardId),
+        });
       },
     );
     if (saved && connection) setActivityVersion((value) => value + 1);
     return saved;
   }
 
-  async function recordReview(cardId: string, rating: Rating, mode: ReviewMode, id: string) {
-    const log: ReviewLog = { id, cardId, rating, date: new Date().toISOString(), mode };
+  async function recordReview(cardId: string, rating: Rating, mode: ReviewMode, id: string, firstRecall?: FirstRecall) {
+    const reviewDraft = { id, cardId, rating, mode, firstRecall: mode === 'scheduled' ? firstRecall : undefined };
+    const log: ReviewLog = { ...reviewDraft, date: new Date().toISOString() };
     const saved = await updateStudy(
       (data) => {
         if (data.logs.some((item) => item.id === id)) return data;
@@ -470,10 +481,12 @@ export function useStudyData() {
       },
       async (token) => {
         // 로그인 상태에서는 서버가 최신 복습 기록으로 계산한 일정과 횟수를 화면에 반영한다.
-        const { progress } = await saveReview(token, { id, cardId, rating, mode });
+        const { progress, review } = await saveReview(token, reviewDraft);
         return (library) => ({
           ...library,
           cards: library.cards.map((card) => (card.id === progress.id ? { ...card, ...progress } : card)),
+          // 서버가 확정한 시각·평가를 쓴다. 오래된 응답 재시도가 최근 이력을 덮지 않게 한다.
+          latestReviews: [...latestReviewsByCard([...(library.latestReviews ?? []), review]).values()],
         });
       },
     );
@@ -486,10 +499,15 @@ export function useStudyData() {
     () => (connection ? [] : guest.data.logs.filter(isStudyLog)),
     [connection, guest.data.logs],
   );
+  const lastReviewByCard = useMemo(
+    () => latestReviewsByCard(connection ? connection.library.latestReviews ?? [] : studyLogs),
+    [connection, studyLogs],
+  );
   return {
     decks,
     cards,
     studyLogs,
+    lastReviewByCard,
     createDeck,
     editDeck,
     deleteDeck,

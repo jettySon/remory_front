@@ -1,12 +1,12 @@
 import type { DailyCounts, RatingCounts } from '../study/insights';
-import type { CardContent, CardDraft, Deck, DeckContent, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
+import type { CardContent, CardDraft, Deck, DeckContent, FirstRecall, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 import { request } from './request';
 
-export type StudyLibrary = { decks: Deck[]; cards: StudyCard[] };
-export type StudyData = StudyLibrary & { logs: ReviewLog[] };
+export type StudyData = { decks: Deck[]; cards: StudyCard[]; logs: ReviewLog[] };
+export type StudyLibrary = Omit<StudyData, 'logs'> & { latestReviews: ReviewLog[] };
 export type NewCard = CardDraft & { id: string };
 type ReviewProgress = Pick<StudyCard, 'id' | 'dueAt' | 'repetitions'>;
-export type NewReview = { id: string; cardId: string; rating: Rating; mode: ReviewMode };
+export type NewReview = { id: string; cardId: string; rating: Rating; mode: ReviewMode; firstRecall?: FirstRecall };
 export type StudyReport = {
   totals: { total: number; free: number };
   decks: { id: string; counts: RatingCounts }[];

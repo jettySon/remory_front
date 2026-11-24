@@ -1,5 +1,5 @@
 import { useLanguage } from '../i18n/LanguageProvider';
-import { ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { formatWeekday } from '../i18n/messages';
 import { DeckTile } from '../components/DeckVisuals';
 import { Mascot, Star } from '../components/Illustrations';
@@ -45,7 +45,7 @@ export function HomePage({
   activity?: DailyCounts;
   openDeck: (id: string) => void;
   go: (p: Page) => void;
-  startReview: (deckId?: string) => void;
+  startReview: () => void;
   onFreeReview: () => void;
   onCreate: () => void;
 }) {
@@ -53,7 +53,6 @@ export function HomePage({
   const due = cards.filter(isDue).length;
   const completed = activity?.[today()]?.total ?? 0;
   const hasCards = cards.length > 0;
-  const isCreateDeck = !hasCards && decks.length === 0;
   const actionLabel = hasCards ? t('review.free') : decks.length ? t('cards.addFirst') : t('decks.create');
   return (
     <div className="page home-page">
@@ -80,21 +79,11 @@ export function HomePage({
             </p>
           </div>
           <button
-            className={isCreateDeck ? 'hero-action hero-create-deck' : 'hero-action'}
+            className="hero-action"
             type="button"
             onClick={due > 0 ? () => startReview() : hasCards ? onFreeReview : onCreate}
-            aria-label={due > 0 ? t('home.dueAction', { count: due }) : undefined}
           >
-            {due > 0 ? (
-              <span className="hero-count">
-                {due}<span>{t('home.dueUnit', { count: due })}</span>
-              </span>
-            ) : actionLabel}
-            {!isCreateDeck && (
-              <span className="hero-action-arrow" aria-hidden="true">
-                <ArrowRight size={15} strokeWidth={1.8} />
-              </span>
-            )}
+            {due > 0 ? t('home.reviewAction') : actionLabel}
           </button>
         </div>
       </section>

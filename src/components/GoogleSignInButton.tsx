@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { isAndroidApp } from '../platform/android';
+import { NativeGoogleSignInButton } from './NativeGoogleSignInButton';
 import { googleChallenge, googleErrorMessage, loadGoogleIdentity, type GoogleProof, type GooglePurpose } from '../api/google';
 import { useLanguage } from '../i18n/LanguageProvider';
 import type { MessageKey } from '../i18n/messages';
 
-export function GoogleSignInButton({
+function WebGoogleSignInButton({
   onCredential,
   purpose = 'login',
   disabled = false,
@@ -89,4 +91,8 @@ export function GoogleSignInButton({
       )}
     </div>
   );
+}
+
+export function GoogleSignInButton(props: Parameters<typeof WebGoogleSignInButton>[0]) {
+  return isAndroidApp() ? <NativeGoogleSignInButton {...props} /> : <WebGoogleSignInButton {...props} />;
 }

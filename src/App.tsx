@@ -1,4 +1,5 @@
 import type { GoogleProof } from './api/google';
+import { isAndroidApp } from './platform/android';
 import { useLanguage } from './i18n/LanguageProvider';
 import type { Message } from './i18n/messages';
 import { useEffect, useRef, useState } from 'react';
@@ -11,6 +12,7 @@ import { DeleteDeckModal } from './components/dialogs/DeleteDeckModal';
 import { EditDeckModal } from './components/dialogs/EditDeckModal';
 import { DeleteCardModal } from './components/dialogs/DeleteCardModal';
 import { EditCardModal } from './components/dialogs/EditCardModal';
+import { ScheduledReviewModal } from './components/dialogs/ScheduledReviewModal';
 import { FreeReviewModal } from './components/dialogs/FreeReviewModal';
 import { SettingsModal } from './components/dialogs/SettingsModal';
 import { AccountDeletionForm } from './components/AccountDeletionForm';
@@ -26,7 +28,7 @@ import { HomePage } from './pages/HomePage';
 import { ReviewPage } from './pages/ReviewPage';
 import { StatsPage, type StatsFilters } from './pages/StatsPage';
 import { getReviewWeek, type DailyCounts } from './study/insights';
-import { localDay, today } from './study/review';
+import { isDue, localDay, today } from './study/review';
 import { activityPath } from './api/study';
 import type { GuestImportPreference } from './study/guestData';
 import type { AccountAction } from './api/account';
@@ -39,6 +41,7 @@ type AppModal =
   | 'settings'
   | 'withdraw-account'
   | 'free-review'
+  | 'scheduled-review'
   | { type: 'edit-card' | 'delete-card'; cardId: string }
   | { type: 'edit-deck' | 'delete-deck'; deckId: string };
 
@@ -80,13 +83,28 @@ export default function App() {
   const deckModal = itemModal && 'deckId' in itemModal ? itemModal : null;
   const actionDeck = deckModal ? decks.find((deck) => deck.id === deckModal.deckId) : undefined;
   const actionCard = cardModal ? cards.find((card) => card.id === cardModal.cardId) : undefined;
-  const reviewTheme = decks.find((deck) => deck.id === review.current?.deckId)?.theme;
+  const reviewDeck = decks.find((deck) => deck.id === (review.current?.deckId ?? review.deckId));
 
   useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(null), 2800);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!isAndroidApp()) return;
+    window.__remoryHandleBack = () => {
+      if (saving) return true;
+      if (modalState) { setModal(null); return true; }
+      if (page !== 'home') {
+        setPage(page === 'deck-detail' ? 'decks' : 'home');
+        window.scrollTo({ top: 0 });
+        return true;
+      }
+      return false;
+    };
+    return () => { delete window.__remoryHandleBack; };
+  }, [page, modalState, saving]);
 
   const previousAccountId = useRef(account?.id);
   useEffect(() => {
@@ -156,7 +174,18 @@ export default function App() {
   }
 
   function startReview(deckId?: string) {
-    review.start(deckId);
+    if (saving) return;
+    if (deckId === undefined && decks.length > 1) {
+      setModal('scheduled-review');
+      return;
+    }
+    const deck = decks.find((item) => item.id === (deckId ?? decks[0]?.id));
+    const deckCards = cards.filter((card) => card.deckId === deck?.id);
+    // 예정 카드가 없으면 같은 덱의 자유 복습으로 전환해 기존 복습일을 유지한다.
+    if (deck && deckCards.length > 0 && !deckCards.some(isDue)) review.startFree(deck.id);
+    // 덱이 없거나 사라진 경우 빈 복습 화면으로 이동한다. 다른 덱으로 대체하지 않는다.
+    else review.start(deck?.id ?? '');
+    setModal(null);
     setPage('review');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -343,7 +372,9 @@ export default function App() {
                 <ReviewPage
                   key={`${review.sessionId}-${review.current?.id ?? 'empty'}`}
                   current={review.current}
-                  theme={reviewTheme}
+                  lastReview={review.current ? study.lastReviewByCard.get(review.current.id) : undefined}
+                  theme={reviewDeck?.theme}
+                  deckTitle={reviewDeck?.title}
                   progress={review.progress}
                   total={review.total}
                   finished={review.finished}
@@ -353,7 +384,7 @@ export default function App() {
                   rate={review.rate}
                   pendingRating={review.pendingRating}
                   saving={saving}
-                  restart={startReview}
+                  restart={() => startReview()}
                   mode={review.mode}
                   onStats={() => navigate('stats')}
                   onFreeReview={chooseFreeReviewDeck}
@@ -395,7 +426,7 @@ export default function App() {
           </>
         )}
       </main>
-      {!study.restoring && !study.restoreError && page !== 'calendar' && page !== 'stats' && (
+      {!study.restoring && !study.restoreError && page !== 'calendar' && page !== 'stats' && page !== 'review' && (
         <button
           className="floating-add"
           disabled={saving}
@@ -413,6 +444,10 @@ export default function App() {
             current?.closing && current.key === modalState.key ? null : current
           ))}
         >
+          {modal === 'scheduled-review' && (
+            <ScheduledReviewModal decks={decks} cards={cards} saving={saving} onStart={startReview}
+              onClose={closeEditor} />
+          )}
           {modal === 'free-review' && (
             <FreeReviewModal
               decks={decks}

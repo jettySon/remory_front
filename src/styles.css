@@ -71,7 +71,6 @@ button { border: 0; }
   --hero-accent: #87578b;
   --hero-copy: #755f81;
   --hero-cloud: #fffbff;
-  --hero-action-bg: linear-gradient(110deg, #684e88, #805f9a);
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -170,49 +169,28 @@ button { border: 0; }
 .hero-star.first { top: 21%; right: 17%; }
 .hero-star.second { top: 36%; left: 12%; width: 9px; height: 9px; animation-delay: 1.4s; }
 .hero-action {
+  --hero-action-fill: #f8eefb;
+  --hero-action-highlight: #efdef5;
+  --hero-action-label: #604574;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 6px 7px 6px 16px;
-  border-radius: 999px;
-  background: var(--hero-action-bg);
-  color: #fffaff;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: filter .18s ease, scale .18s ease;
-}
-.hero-create-deck {
-  --deck-button-fill: #f8eefb;
-  --deck-button-highlight: #efdef5;
-  --deck-button-label: #604574;
   justify-content: center;
+  min-height: 46px;
   min-inline-size: 108px;
   padding: 8px 18px;
   border-radius: 15px;
-  background: var(--deck-button-fill);
-  color: var(--deck-button-label);
+  background: var(--hero-action-fill);
+  color: var(--hero-action-label);
   font-size: 14px;
+  font-weight: 700;
   letter-spacing: -.02em;
+  white-space: nowrap;
   transition: background-color .18s ease;
 }
 @media (hover: hover) {
-  .hero-action:not(.hero-create-deck):hover { filter: brightness(1.08); }
-  .hero-create-deck:hover { background-color: var(--deck-button-highlight); }
+  .hero-action:hover { background-color: var(--hero-action-highlight); }
 }
-.hero-action:not(.hero-create-deck):active { scale: .97; }
-.hero-create-deck:active { background-color: var(--deck-button-highlight); }
-.hero-action-arrow {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #ffffff22;
-}
-.hero-count { display: inline-flex; align-items: baseline; gap: 3px; font-size: 19px; line-height: 1; font-variant-numeric: tabular-nums; }
-.hero-count span { font-size: 12px; }
+.hero-action:active { background-color: var(--hero-action-highlight); }
 .section-heading {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 14px;}
 .section-heading h3 {margin:0;}
 .subtle-action {background:transparent;display:flex;align-items:center;gap:1px;color:#ab90ad;font-size:11px;font-weight:650;padding:4px 0;}
@@ -457,16 +435,15 @@ button { border: 0; }
   --hero-accent: #edbde4;
   --hero-copy: #e0cce8;
   --hero-cloud: #80638f;
-  --hero-action-bg: linear-gradient(110deg, #76568f, #86639d);
   background: linear-gradient(145deg, #4d3659, #342447 70%, #493045);
 }
 [data-theme="dark"] .hero::before { opacity: .1; }
 [data-theme="dark"] .hero-orb { opacity: .24; }
 [data-theme="dark"] .hero-star { color: #ecd9f8; }
-[data-theme="dark"] .hero-create-deck {
-  --deck-button-fill: #644a75;
-  --deck-button-highlight: #745785;
-  --deck-button-label: #fff1ff;
+[data-theme="dark"] .hero-action {
+  --hero-action-fill: #644a75;
+  --hero-action-highlight: #745785;
+  --hero-action-label: #fff1ff;
 }
 [data-theme="dark"] .garden-teaser { background: linear-gradient(140deg, #393451, #4f3650); }
 [data-theme="dark"] .garden-teaser-copy > span { color: var(--muted); }
@@ -1450,3 +1427,37 @@ a.settings-option { text-decoration: none; }
   .privacy-document :is(p, dd, dt, h1, h2, strong, a) { color: black !important; }
   .privacy-section h2 { break-after: avoid; }
 }
+
+
+/* Review starts from one named deck. */
+.review-deck-guide { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+.review-deck-picker { display: grid; gap: 10px; }
+.review-deck-option { display: flex; align-items: center; gap: 13px; width: 100%; padding: 14px; border: 1px solid #eae0ef; border-radius: 18px; background: #fcf8fe; color: var(--ink); text-align: left; transition: background-color var(--motion-fast) ease; }
+.review-deck-option.peach { --review-deck-tint: #f9e1ea; }
+.review-deck-option.lavender { --review-deck-tint: #e9dff8; }
+.review-deck-option.butter { --review-deck-tint: #fff0cf; }
+.review-deck-option.blue { --review-deck-tint: #e1ecfb; }
+.review-deck-option:enabled:hover, .review-deck-option:enabled:active { background: #f1e8f8; }
+.review-deck-option:disabled { opacity: .48; cursor: default; }
+.review-deck-icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 15px; background: var(--review-deck-tint, #e9dff8); color: #826396; }
+.review-deck-copy { display: grid; gap: 5px; min-width: 0; }
+.review-deck-copy strong { overflow-wrap: anywhere; font-size: 14px; line-height: 1.6; }
+.review-deck-copy small { color: var(--muted); font-size: 11px; line-height: 1.6; }
+.page .review-deck-name { margin: 0 0 6px; color: var(--accent); font-size: 12px; font-weight: 650; line-height: 1.6; overflow-wrap: anywhere; }
+.review-top > div { min-width: 0; }
+.review-index { flex: none; }
+[data-theme="dark"] .review-deck-option { border-color: var(--night-border); background: var(--night-panel); }
+[data-theme="dark"] .review-deck-option:enabled:hover, [data-theme="dark"] .review-deck-option:enabled:active { background: #483459; }
+[data-theme="dark"] .review-deck-icon { background: #4a375a; color: #ead6f5; }
+
+
+/* Previous study stays within the card; rating controls follow the card directly. */
+.review-page .flashcard { min-height: clamp(220px, 32dvh, 320px); }
+.card-review-history { color: #80698d; font-size: 11px; font-weight: 400; line-height: 1.6; letter-spacing: normal; }
+[data-theme="dark"] .card-review-history { color: var(--muted); }
+
+/* Native Android account chooser uses the same Google button shape as the web. */
+.native-google-button { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 16px; border: 1px solid #747775; border-radius: 999px; background: #fff; color: #1f1f1f; font: 500 14px/1.4 Arial, sans-serif; cursor: pointer; }
+.native-google-button:disabled { opacity: .5; cursor: default; }
+.native-google-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+[data-theme="dark"] .native-google-button { background: #131314; color: #e3e3e3; border-color: #8e918f; }

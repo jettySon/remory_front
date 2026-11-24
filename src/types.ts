@@ -14,7 +14,15 @@ export type StudyCard = {
   choices?: string[];
 };
 export type ReviewMode = 'scheduled' | 'focus' | 'free';
-export type ReviewLog = { id: string; cardId: string; rating: Rating; date: string; mode?: ReviewMode };
+export type FirstRecall = 'self_recalled' | 'self_missed' | 'choice_correct' | 'choice_incorrect' | 'choice_revealed';
+export type ReviewLog = {
+  id: string;
+  cardId: string;
+  rating: Rating;
+  date: string;
+  mode?: ReviewMode;
+  firstRecall?: FirstRecall | null;
+};
 
 export type CardKind = 'basic' | 'word' | 'cloze' | 'choice';
 export type CardContent = Pick<StudyCard, 'front' | 'back' | 'choices'>;

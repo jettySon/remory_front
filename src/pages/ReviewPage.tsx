@@ -1,13 +1,16 @@
 import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
-import { ArrowRight, Flower2, RotateCcw, Sparkles } from 'lucide-react';
+import { ArrowRight, Flower2, Sparkles } from 'lucide-react';
 import { Mascot, Star } from '../components/Illustrations';
+import { CardReviewHistory } from '../components/CardReviewHistory';
 import { cardFields } from '../study/cards';
-import type { DeckTheme, Rating, ReviewMode, StudyCard } from '../types';
+import type { DeckTheme, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 
 export function ReviewPage({
   current,
+  lastReview,
   theme,
+  deckTitle,
   progress,
   total,
   finished,
@@ -25,13 +28,15 @@ export function ReviewPage({
   emptyAction,
 }: {
   current?: StudyCard;
+  lastReview?: ReviewLog;
   theme?: DeckTheme;
+  deckTitle?: string;
   progress: number;
   total: number;
   finished: boolean;
   empty: boolean;
   flipped: boolean;
-  flip: () => void;
+  flip: (answer?: string) => void;
   saving: boolean;
   rate: (r: Rating) => void;
   pendingRating?: Rating;
@@ -54,6 +59,7 @@ export function ReviewPage({
           <span className="float-star two">✧</span>
           <Mascot />
         </div>
+        {deckTitle && <p className="review-deck-name">{deckTitle}</p>}
         <h1>{t(`review.completed.${mode}`)}</h1>
         <div className="completion-reward">
           <Flower2 size={22} />
@@ -86,6 +92,7 @@ export function ReviewPage({
         <div className="completion-art smaller">
           <Mascot />
         </div>
+        {deckTitle && <p className="review-deck-name">{deckTitle}</p>}
         <h1>{t('review.empty')}</h1>
         <button className="big-primary" onClick={emptyAction?.onClick ?? onFreeReview}>
           {emptyAction?.label ?? t('review.free')} <ArrowRight size={19} />
@@ -95,10 +102,15 @@ export function ReviewPage({
         </button>
       </div>
     );
+  const choices = current.choices ?? [];
+  const ratingPrompt = mode === 'scheduled' && !choices.length ? 'review.firstRecallPrompt' : 'review.ratingPrompt';
   return (
     <div className="page review-page">
       <div className="review-top">
-        <h1>{title}</h1>
+        <div>
+          {deckTitle && <p className="review-deck-name">{deckTitle}</p>}
+          <h1>{title}</h1>
+        </div>
         <span className="review-index">
           {progress + 1} <small>/ {total}</small>
         </span>
@@ -107,11 +119,11 @@ export function ReviewPage({
         <div style={{ width: `${((progress + 1) / total) * 100}%` }} />
       </div>
       <p className="review-instruction">
-        {current.choices ? t('review.pickAnswer') : t('review.thinkFirst')}
+        {t(choices.length ? 'review.pickAnswer' : 'review.thinkFirst')}
       </p>
       <button
         className={`flashcard ${theme ?? ''} ${flipped ? 'flipped' : ''}`}
-        onClick={flip}
+        onClick={() => flip()}
         aria-label={flipped ? t('review.showQuestion') : t('review.showAnswer')}
       >
         <span className="flashcard-top">
@@ -123,12 +135,12 @@ export function ReviewPage({
           <h2>{flipped ? current.back : current.front}</h2>
         </div>
         <span className="flashcard-bottom">
-          {flipped ? t('review.showQuestion') : t('review.tapReveal')} <RotateCcw size={15} />
+          <CardReviewHistory review={lastReview} />
         </span>
       </button>
-      {current.choices && (
+      {choices.length > 0 && (
         <div className="review-options" aria-label={t('review.choices')}>
-          {current.choices.map((option) => (
+          {choices.map((option) => (
             <button
               type="button"
               key={option}
@@ -136,7 +148,7 @@ export function ReviewPage({
               aria-pressed={choice === option}
               onClick={() => {
                 setChoice(option);
-                flip();
+                flip(option);
               }}
             >
               {option}
@@ -148,12 +160,12 @@ export function ReviewPage({
         <p role="status">{choice === current.back ? t('review.correct') : t('review.selectedAnswer', { answer: choice })}</p>
       )}
       {!flipped ? (
-        <button className="big-primary reveal-btn" onClick={flip}>
+        <button className="big-primary reveal-btn" onClick={() => flip()}>
           {t('review.showAnswer')} <ArrowRight size={19} />
         </button>
       ) : (
         <div className="rating-section">
-          <p>{t('review.ratingPrompt')}</p>
+          <p>{t(ratingPrompt)}</p>
           <div className="rating-grid">
             {(['again', 'hard', 'good', 'easy'] as Rating[]).map((r) => (
               <button
