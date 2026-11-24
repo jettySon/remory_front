@@ -333,7 +333,10 @@ export default function App() {
               signedIn={Boolean(account)}
               onSettings={openSettings}
             />
-            <div className="app-scroll" key={page}>
+            <div
+              className="app-scroll"
+              key={page === 'review' ? `review-${review.sessionId}-${review.finished ? 'done' : 'active'}` : page}
+            >
               {page === 'home' && (
                 <HomePage
                   decks={decks}
@@ -378,6 +381,8 @@ export default function App() {
                   progress={review.progress}
                   total={review.total}
                   finished={review.finished}
+                  missedCount={review.missedCount}
+                  onMissedPractice={review.startMissedPractice}
                   empty={review.total === 0}
                   flipped={review.flipped}
                   flip={review.flip}

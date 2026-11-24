@@ -99,8 +99,44 @@ describe('deck-scoped review', () => {
       { id: 'code-two', rating: 'good', mode: 'scheduled', firstRecall: 'self_recalled' },
     ]);
     expect(node.querySelector('.completion')).not.toBeNull();
-    await click(byText('남은 복습 확인하기'));
+    expect(node.querySelector('.completion .big-primary')?.textContent).toContain('학습 캘린더 보기');
+    expect(node.querySelector('.completion')?.textContent).not.toContain('놓친 카드');
+    await click(byText('남은 복습'));
     expect(node.querySelector('.review-deck-picker')).not.toBeNull();
+  });
+
+  it('offers one focused pass over only the cards missed in the completed review', async () => {
+    const missedChoice: StudyCard = {
+      ...card('missed-choice', 'b'), kind: 'choice', back: 'Right', choices: ['Right', 'Wrong', 'Other'],
+    };
+    data.cards = [card('missed-basic', 'b'), card('known', 'b'), missedChoice, card('unseen', 'a')];
+    await render(); await click(node.querySelector('.hero-action')); await chooseDeck('Development');
+    await click(byText('정답 확인하기'));
+    await click(node.querySelector('.rating-again'));
+    await rememberCurrent();
+    await click(byText('Wrong'));
+    await click(node.querySelector('.rating-good'));
+
+    const completionScroll = node.querySelector<HTMLElement>('.app-scroll')!;
+    completionScroll.scrollTop = 400;
+    await click(byText('놓친 카드 2장 다시 풀기'));
+    expect(node.querySelector('.app-scroll')?.scrollTop).toBe(0);
+    expect(node.querySelector('.review-top h1')?.textContent).toBe('집중 복습');
+    expect(node.querySelector('.review-deck-name')?.textContent).toBe('Development');
+    expect(node.querySelector('.review-index')?.textContent).toContain('/ 2');
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('missed-basic');
+    await click(byText('정답 확인하기'));
+    await click(node.querySelector('.rating-again'));
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('missed-choice');
+    await click(byText('Right'));
+    await click(node.querySelector('.rating-good'));
+
+    expect(record.mock.calls.slice(3)).toEqual([
+      ['missed-basic', 'again', 'focus', expect.any(String), undefined],
+      ['missed-choice', 'good', 'focus', expect.any(String), undefined],
+    ]);
+    expect(node.querySelector('.completion')?.textContent).toContain('집중 복습을 마쳤어요!');
+    expect(node.querySelector('.completion')?.textContent).not.toContain('놓친 카드');
   });
 
   it('uses the same deck selection from the bottom navigation', async () => {
@@ -195,6 +231,7 @@ describe('deck-scoped review', () => {
     await click(byText('Right'));
     await click(node.querySelector('.rating-good'));
     expect(record).toHaveBeenCalledWith('choice', 'good', 'scheduled', expect.any(String), outcome);
+    expect(Boolean(byText('놓친 카드 1장 다시 풀기'))).toBe(outcome === 'choice_incorrect');
   });
 
   it('retries the same first recall result when saving fails', async () => {
@@ -207,6 +244,7 @@ describe('deck-scoped review', () => {
     await click(node.querySelector('.rating-again'));
     expect(record.mock.calls[0]).toEqual(['language-due', 'again', 'scheduled', expect.any(String), 'self_missed']);
     expect(record.mock.calls[1]).toEqual(record.mock.calls[0]);
+    expect(byText('놓친 카드 1장 다시 풀기')).toBeTruthy();
   });
 
   it('never broadens an empty or unknown deck ID into all decks', async () => {

@@ -117,11 +117,11 @@ describe('last study across guest and account storage', () => {
     expect(study.lastReviewByCard.get(card.id)).toEqual(recent);
   });
 
-  it('updates and restores the latest guest review while retaining the free-review schedule', async () => {
+  it.each(['free', 'focus'] as const)('updates and restores a %s review without changing the schedule', async (mode) => {
     guest(); await renderStudy();
-    await act(async () => { expect(await study.recordReview(card.id, 'easy', 'free', 'new')).toBe(true); });
+    await act(async () => { expect(await study.recordReview(card.id, 'easy', mode, 'new')).toBe(true); });
     const saved = study.lastReviewByCard.get(card.id)!;
-    expect(saved.id).toBe('new'); expect(saved.rating).toBe('easy'); expect(saved.mode).toBe('free');
+    expect(saved.id).toBe('new'); expect(saved.rating).toBe('easy'); expect(saved.mode).toBe(mode);
     expect(study.cards).toEqual([card]); expect(readGuestStudy().data.cards).toEqual([card]);
     await act(async () => root.render(<LanguageProvider><span /></LanguageProvider>));
     await renderStudy();

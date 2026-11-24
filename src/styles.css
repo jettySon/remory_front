@@ -1451,6 +1451,40 @@ a.settings-option { text-decoration: none; }
 [data-theme="dark"] .review-deck-icon { background: #4a375a; color: #ead6f5; }
 
 
+.completion { padding-top: 18px; }
+.completion .completion-art { height: clamp(128px, 23dvh, 182px); margin-top: 0; }
+.completion .completion-art .mascot { width: clamp(146px, 26dvh, 196px); height: auto; }
+.completion .float-star { font-size: 24px; }
+.completion .float-star.one { top: 25%; left: 22%; }
+.completion .float-star.two { top: 43%; right: 22%; }
+.completion .completion-reward { margin-bottom: 20px; padding: 9px 14px; }
+.completion-actions { display: grid; gap: 10px; width: 100%; }
+.completion .completion-primary {
+  min-height: 52px; height: auto; padding: 12px 16px; border-radius: 18px; box-shadow: none;
+  background: linear-gradient(110deg, #e7d8f6, #f1dff0); color: #50366c;
+  font-size: 14px; line-height: 1.4;
+}
+.completion-shortcuts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.completion-shortcut {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  min-height: 60px; padding: 9px 5px; border-radius: 15px; background: #f6eff7; color: #685575;
+  font-size: 11px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere;
+  transition: background-color var(--motion-fast) ease, transform var(--motion-fast) ease;
+}
+.completion-shortcut svg { flex: none; color: var(--accent); }
+.completion-shortcut:only-child { flex-direction: row; gap: 8px; min-height: 48px; }
+.completion-shortcut:active { transform: scale(.97); }
+@media (hover: hover) {
+  .completion-shortcut:enabled:hover { background: #eee2f2; }
+}
+[data-theme="dark"] .completion .completion-primary {
+  background: linear-gradient(110deg, #593f73, #573b59); color: #fff1ff;
+}
+[data-theme="dark"] .completion-shortcut { background: var(--night-panel); color: #efe1f4; }
+@media (hover: hover) {
+  [data-theme="dark"] .completion-shortcut:enabled:hover { background: #41324f; }
+}
+
 /* Previous study stays within the card; rating controls follow the card directly. */
 .review-page .flashcard { min-height: clamp(220px, 32dvh, 320px); }
 .card-review-history { color: #80698d; font-size: 11px; font-weight: 400; line-height: 1.6; letter-spacing: normal; }

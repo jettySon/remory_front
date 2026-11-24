@@ -13,10 +13,16 @@ export function useReviewSession(
   const [progress, setProgress] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [missedCardIds, setMissedCardIds] = useState<string[]>([]);
   const current = useMemo(() => cards.find((card) => card.id === queue[progress]), [cards, queue, progress]);
   const total = queue.length;
   const firstChoiceRecall = useRef<FirstRecall | undefined>(undefined);
-  const reviewAttempt = useRef<{ id: string; rating: Rating; firstRecall?: FirstRecall } | null>(null);
+  const reviewAttempt = useRef<{ id: string; rating: Rating; firstRecall?: FirstRecall; saving: boolean } | null>(null);
+  const missedForPractice = useMemo(() => {
+    if (!finished || mode !== 'scheduled' || !missedCardIds.length) return [];
+    const available = new Set(cards.map((card) => card.id));
+    return missedCardIds.filter((id) => available.has(id));
+  }, [cards, finished, missedCardIds, mode]);
 
   function startQueue(ids: string[], nextMode: ReviewMode, selectedDeckId: string | null) {
     setSessionId((previous) => previous + 1);
@@ -28,6 +34,7 @@ export function useReviewSession(
     setProgress(0);
     setFlipped(false);
     setFinished(false);
+    setMissedCardIds([]);
   }
 
   function start(deckId: string) {
@@ -47,6 +54,10 @@ export function useReviewSession(
       'focus',
       null,
     );
+  }
+
+  function startMissedPractice() {
+    if (missedForPractice.length) startQueue(missedForPractice, 'focus', deckId);
   }
 
   function startFree(deckId: string) {
@@ -69,14 +80,23 @@ export function useReviewSession(
   }
 
   async function rate(rating: Rating) {
-    if (!current || !flipped) return;
+    if (!current || !flipped || reviewAttempt.current?.saving) return;
     const selfReport = rating === 'again' ? 'self_missed' : 'self_recalled';
     const measuredRecall = current.choices?.length ? firstChoiceRecall.current : selfReport;
     const firstRecall = mode === 'scheduled' ? measuredRecall : undefined;
     // 같은 복습 ID·평가·첫 시도 결과를 재사용해 저장 재시도에도 한 번만 기록한다.
-    const attempt = reviewAttempt.current ?? { id: newStudyId(), rating, firstRecall };
+    const attempt = reviewAttempt.current ?? { id: newStudyId(), rating, firstRecall, saving: false };
     reviewAttempt.current = attempt;
-    if (!(await recordReview(current.id, attempt.rating, mode, attempt.id, attempt.firstRecall))) return;
+    attempt.saving = true;
+    try {
+      const saved = await recordReview(current.id, attempt.rating, mode, attempt.id, attempt.firstRecall);
+      if (!saved || reviewAttempt.current !== attempt) return;
+    } finally {
+      attempt.saving = false;
+    }
+    if (mode === 'scheduled' && (attempt.rating === 'again' || attempt.firstRecall === 'choice_incorrect')) {
+      setMissedCardIds((previous) => [...previous, current.id]);
+    }
     firstChoiceRecall.current = undefined;
     reviewAttempt.current = null;
     setFlipped(false);
@@ -95,6 +115,8 @@ export function useReviewSession(
     deckId,
     start,
     startPractice,
+    startMissedPractice,
+    missedCount: missedForPractice.length,
     startFree,
     flip,
     rate,

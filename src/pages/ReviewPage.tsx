@@ -1,8 +1,9 @@
 import { useLanguage } from '../i18n/LanguageProvider';
 import { useState } from 'react';
-import { ArrowRight, Flower2, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Mascot, Star } from '../components/Illustrations';
 import { CardReviewHistory } from '../components/CardReviewHistory';
+import { ReviewCompletion } from '../components/ReviewCompletion';
 import { cardFields } from '../study/cards';
 import type { DeckTheme, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 
@@ -14,6 +15,8 @@ export function ReviewPage({
   progress,
   total,
   finished,
+  missedCount,
+  onMissedPractice,
   empty,
   flipped,
   flip,
@@ -34,6 +37,8 @@ export function ReviewPage({
   progress: number;
   total: number;
   finished: boolean;
+  missedCount: number;
+  onMissedPractice: () => void;
   empty: boolean;
   flipped: boolean;
   flip: (answer?: string) => void;
@@ -52,39 +57,18 @@ export function ReviewPage({
   const title = t(`review.${mode}`);
   if (finished)
     return (
-      <div className="page completion">
-        <div className="completion-art">
-          <div className="completion-orb" />
-          <span className="float-star one">✦</span>
-          <span className="float-star two">✧</span>
-          <Mascot />
-        </div>
-        {deckTitle && <p className="review-deck-name">{deckTitle}</p>}
-        <h1>{t(`review.completed.${mode}`)}</h1>
-        <div className="completion-reward">
-          <Flower2 size={22} />
-          <span>{t('review.completedCount', { count: total })}</span>
-          <Sparkles size={18} />
-        </div>
-        <button className="big-primary" onClick={onCalendar}>
-          {t('review.openCalendar')} <ArrowRight size={19} />
-        </button>
-        <button
-          className="plain-link"
-          onClick={mode === 'focus' ? onStats : mode === 'free' ? onFreeReview : restart}
-        >
-          {
-            { focus: t('review.backToStats'), free: t('review.freePick'), scheduled: t('review.checkRemaining') }[
-              mode
-            ]
-          }
-        </button>
-        {mode === 'scheduled' && (
-          <button className="plain-link" onClick={onFreeReview}>
-            {t('review.free')}
-          </button>
-        )}
-      </div>
+      <ReviewCompletion
+        deckTitle={deckTitle}
+        total={total}
+        mode={mode}
+        missedCount={missedCount}
+        saving={saving}
+        onMissedPractice={onMissedPractice}
+        onCalendar={onCalendar}
+        onRemaining={restart}
+        onStats={onStats}
+        onFreeReview={onFreeReview}
+      />
     );
   if (empty || !current)
     return (
