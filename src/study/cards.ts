@@ -70,6 +70,18 @@ export function readCardEditFields(card: StudyCard): CardEditFields {
   return { kind: 'basic', values: [card.front, card.back] };
 }
 
+export function getTypeableAnswer(card: StudyCard): { expected: string; context?: string } | undefined {
+  if (card.choices?.length || (card.kind !== 'word' && card.kind !== 'cloze')) return undefined;
+
+  const { kind, values } = readCardEditFields(card);
+  if (kind === 'word') return { expected: values[1], context: values[2] };
+  if (kind === 'cloze') return { expected: values[1], context: card.back };
+
+  // Older word cards without a separate example can still be compared.
+  if (card.kind === 'word' && card.back.trim()) return { expected: card.back };
+  return undefined;
+}
+
 export function makeCardEdit(card: StudyCard, kind: CardKind, values: string[]): CardContent {
   if (kind === 'choice') {
     const [front, back, firstWrong, secondWrong] = values.map((value) => value.trim());

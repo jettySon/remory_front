@@ -1,10 +1,11 @@
 import { useLanguage } from '../i18n/LanguageProvider';
-import { useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { ArrowRight, PenLine } from 'lucide-react';
 import { Mascot, Star } from '../components/Illustrations';
 import { CardReviewHistory } from '../components/CardReviewHistory';
 import { ReviewCompletion } from '../components/ReviewCompletion';
-import { cardFields } from '../study/cards';
+import { ReviewAnswerFeedback, ReviewAnswerInput } from '../components/ReviewAnswerInput';
+import { cardFields, getTypeableAnswer } from '../study/cards';
 import type { DeckTheme, Rating, ReviewLog, ReviewMode, StudyCard } from '../types';
 
 export function ReviewPage({
@@ -54,6 +55,19 @@ export function ReviewPage({
 }) {
   const { t } = useLanguage();
   const [choice, setChoice] = useState<string>();
+  const [answerEntry, setAnswerEntry] = useState<'closed' | 'open' | 'revealed'>('closed');
+  const [enteredAnswer, setEnteredAnswer] = useState<string>();
+  const answerCard = useRef<HTMLButtonElement>(null);
+  const answerId = useId();
+
+  useEffect(() => {
+    if (flipped && enteredAnswer !== undefined) answerCard.current?.focus({ preventScroll: true });
+  }, [flipped, enteredAnswer]);
+
+  function flipCard() {
+    setAnswerEntry('revealed');
+    flip();
+  }
   const title = t(`review.${mode}`);
   if (finished)
     return (
@@ -87,6 +101,13 @@ export function ReviewPage({
       </div>
     );
   const choices = current.choices ?? [];
+  const typeableAnswer = getTypeableAnswer(current);
+  const recallPrompt = typeableAnswer ? 'review.recallFirst' : 'review.thinkFirst';
+  const instruction = choices.length ? 'review.pickAnswer' : recallPrompt;
+  const canType = Boolean(typeableAnswer) && answerEntry !== 'revealed';
+  const comparison = flipped && enteredAnswer !== undefined && typeableAnswer
+    ? { ...typeableAnswer, answer: enteredAnswer }
+    : undefined;
   const ratingPrompt = mode === 'scheduled' && !choices.length ? 'review.firstRecallPrompt' : 'review.ratingPrompt';
   return (
     <div className="page review-page">
@@ -103,20 +124,25 @@ export function ReviewPage({
         <div style={{ width: `${((progress + 1) / total) * 100}%` }} />
       </div>
       <p className="review-instruction">
-        {t(choices.length ? 'review.pickAnswer' : 'review.thinkFirst')}
+        {t(instruction)}
       </p>
       <button
         className={`flashcard ${theme ?? ''} ${flipped ? 'flipped' : ''}`}
-        onClick={() => flip()}
+        ref={answerCard}
+        onClick={flipCard}
         aria-label={flipped ? t('review.showQuestion') : t('review.showAnswer')}
+        aria-describedby={comparison ? `${answerId}-expected ${answerId}` : undefined}
       >
         <span className="flashcard-top">
           <span>{flipped ? t('cards.field.correct') : t(cardFields[current.kind ?? 'basic'].label)}</span>
           <Star />
         </span>
-        <div className="flashcard-content" key={flipped ? 'answer' : 'question'}>
+        <div className={`flashcard-content${comparison ? ' has-answer-comparison' : ''}`} key={flipped ? 'answer' : 'question'}>
           <span className="flashcard-emoji">{flipped ? '✦' : '☁'}</span>
-          <h2>{flipped ? current.back : current.front}</h2>
+          <h2 id={comparison ? `${answerId}-expected` : undefined}>
+            {flipped ? comparison?.expected ?? current.back : current.front}
+          </h2>
+          {comparison && <ReviewAnswerFeedback id={answerId} {...comparison} />}
         </div>
         <span className="flashcard-bottom">
           <CardReviewHistory review={lastReview} />
@@ -143,10 +169,25 @@ export function ReviewPage({
       {flipped && choice && (
         <p role="status">{choice === current.back ? t('review.correct') : t('review.selectedAnswer', { answer: choice })}</p>
       )}
-      {!flipped ? (
-        <button className="big-primary reveal-btn" onClick={() => flip()}>
-          {t('review.showAnswer')} <ArrowRight size={19} />
-        </button>
+      {!flipped && canType && answerEntry === 'open' ? (
+        <ReviewAnswerInput
+          onCompare={(answer) => {
+            setEnteredAnswer(answer);
+            flipCard();
+          }}
+          onReveal={flipCard}
+        />
+      ) : !flipped ? (
+        <div className={canType ? 'review-reveal-actions' : undefined}>
+          <button className="big-primary reveal-btn" type="button" onClick={flipCard}>
+            {t('review.showAnswer')} <ArrowRight size={19} aria-hidden="true" />
+          </button>
+          {canType && (
+            <button className="review-type-answer" type="button" onClick={() => setAnswerEntry('open')}>
+              <PenLine size={16} aria-hidden="true" /> {t('review.typeAnswer')}
+            </button>
+          )}
+        </div>
       ) : (
         <div className="rating-section">
           <p>{t(ratingPrompt)}</p>

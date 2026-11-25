@@ -546,7 +546,7 @@ button { border: 0; }
 }
 [data-theme="dark"] .month-heading button { background: #514069; color: #f4e4ff; }
 
-.sheet-form, .stats-page, .language-setting, .card-search-controls {
+.sheet-form, .stats-page, .language-setting, .card-search-controls, .review-answer-form {
   --field-label: #6c587c;
   --field-ink: #594968;
   --field-hint: #75647e;
@@ -557,7 +557,7 @@ button { border: 0; }
   --field-focus: #9e7fbd;
   --menu-shadow: #50366129;
 }
-[data-theme="dark"] :is(.sheet-form, .stats-page, .language-setting, .card-search-controls) {
+[data-theme="dark"] :is(.sheet-form, .stats-page, .language-setting, .card-search-controls, .review-answer-form) {
   --field-label: #ede0f2;
   --field-ink: #f5eafa;
   --field-hint: #c6b4d0;
@@ -1495,3 +1495,44 @@ a.settings-option { text-decoration: none; }
 .native-google-button:disabled { opacity: .5; cursor: default; }
 .native-google-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 [data-theme="dark"] .native-google-button { background: #131314; color: #e3e3e3; border-color: #8e918f; }
+
+/* Optional typed practice uses the same reveal and rating flow. */
+.review-reveal-actions { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 8px; margin-top: 20px; }
+.review-reveal-actions .reveal-btn { min-height: 52px; height: auto; margin-top: 0; padding: 8px; }
+.review-type-answer {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;
+  min-height: 52px; border-radius: 18px; background: #f0e7f7; color: #614778;
+  font-size: 12px; font-weight: 690; transition: background-color var(--motion-fast) ease;
+}
+.review-type-answer svg, .review-reveal-actions .reveal-btn svg { flex: none; }
+.review-answer-form { display: grid; margin-top: 20px; animation: content-in var(--motion-fast) ease-out; }
+.review-answer-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.review-answer-row input {
+  min-width: 0; width: 100%; min-height: 50px; padding: 10px 13px; border: 1px solid var(--field-border);
+  border-radius: 16px; background: var(--field-background); color: var(--field-ink); font-size: 16px;
+}
+.review-answer-row input::placeholder { color: var(--field-hint); }
+.review-answer-row .review-compare-answer { min-height: 50px; height: auto; padding: 10px 13px; border-radius: 16px; box-shadow: none; }
+.review-answer-row .review-compare-answer:disabled { opacity: .55; cursor: default; }
+.review-skip-answer {
+  min-height: 44px; padding-inline: 12px; justify-self: center; border-radius: 12px; background: none;
+  color: var(--accent); font-size: 12px; font-weight: 650;
+}
+.flashcard-content.has-answer-comparison { gap: 7px; padding-block: 10px; }
+.has-answer-comparison .flashcard-emoji { font-size: 23px; line-height: 1.2; }
+.review-answer-feedback {
+  display: grid; justify-items: center; gap: 4px; width: 100%; color: #655172;
+  font-size: 12px; line-height: 1.55; overflow-wrap: anywhere;
+}
+.review-answer-context { margin-bottom: 3px; white-space: pre-wrap; }
+.review-entered-answer { font-weight: 650; }
+.review-answer-result { font-size: 11px; }
+@media (hover: hover) {
+  .review-type-answer:hover { background: #e8dbf1; }
+  .review-skip-answer:hover { background: #f4ebf7; }
+}
+[data-theme="dark"] .review-type-answer { background: #433352; color: #eedbf8; }
+[data-theme="dark"] .review-answer-feedback { color: var(--muted); }
+@media (hover: hover) {
+  [data-theme="dark"] .review-type-answer:hover, [data-theme="dark"] .review-skip-answer:hover { background: #4f3b61; }
+}

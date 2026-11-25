@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { LanguageProvider } from '../src/i18n/LanguageProvider';
 import { useReviewSession } from '../src/hooks/useReviewSession';
+import { makeDraft } from '../src/study/cards';
 import type { Deck, StudyCard } from '../src/types';
 
 const mocked = vi.hoisted(() => ({ study: vi.fn() }));
@@ -62,6 +63,76 @@ async function rememberCurrent() {
   await click(byText('정답 확인하기'));
   await click([...node.querySelectorAll('.rating')].find((button) => button.textContent?.includes('보통')));
 }
+
+describe('optional typed answers', () => {
+  async function enterAnswer(value: string) {
+    await click(byText('답 직접 입력'));
+    const input = node.querySelector<HTMLInputElement>('.review-answer-form input')!;
+    expect(document.activeElement).toBe(input);
+    expect(byText('정답과 비교')?.disabled).toBe(true);
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('compares the stored word meaning and cloze answer before collecting a rating', async () => {
+    const word = makeDraft('word', ['미루다', 'put off', 'They put off the call.']);
+    const cloze = makeDraft('cloze', ['We ___ the meeting.', 'put off']);
+    data = { decks: [decks[0]], cards: [{ ...card('word', 'a'), ...word }, { ...card('cloze', 'a'), ...cloze }] };
+    await render(); await click(node.querySelector('.hero-action'));
+    expect(node.querySelector('.review-answer-form')).toBeNull();
+    await enterAnswer('  PUT   OFF  ');
+    await click(byText('정답과 비교'));
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('put off');
+    expect(node.querySelector('.review-answer-context')?.textContent).toBe('They put off the call.');
+    expect(node.querySelector('.review-entered-answer')?.textContent).toBe('내 답 · PUT   OFF');
+    expect(node.querySelector('.review-answer-result')?.textContent).toBe('정답과 일치해요');
+    expect(node.querySelector('.flashcard')?.nextElementSibling).toBe(node.querySelector('.rating-section'));
+    expect(record).not.toHaveBeenCalled();
+    await click(node.querySelector('.rating-good'));
+    expect(record).toHaveBeenLastCalledWith('word', 'good', 'scheduled', expect.any(String), 'self_recalled');
+    expect(node.querySelector('.review-answer-feedback')).toBeNull();
+    expect(node.querySelector('.review-answer-form')).toBeNull();
+
+    await enterAnswer('postponed');
+    await click(byText('정답과 비교'));
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('put off');
+    expect(node.querySelector('.review-answer-context')?.textContent).toBe('We put off the meeting.');
+    expect(node.querySelector('.review-answer-result')?.textContent).toContain('표기가 달라요');
+    await click(node.querySelector('.rating-hard'));
+    expect(record).toHaveBeenLastCalledWith('cloze', 'hard', 'scheduled', expect.any(String), 'self_recalled');
+  });
+
+  it('allows bypassing input and skips input on a cloze whose answer cannot be recovered', async () => {
+    data = { decks: [decks[0]], cards: [
+      { ...card('old-word', 'a'), kind: 'word', back: 'go on' },
+      { ...card('edited-cloze', 'a'), kind: 'cloze', front: 'She ___ the door.', back: 'An older answer' },
+    ] };
+    await render(); await click(node.querySelector('.hero-action'));
+    await click(byText('답 직접 입력'));
+    await click(byText('입력 없이 정답 보기'));
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('go on');
+    expect(node.querySelector('.review-answer-feedback')).toBeNull();
+    await click(node.querySelector('.rating-good'));
+    expect(byText('답 직접 입력')).toBeUndefined();
+    await click(byText('정답 확인하기'));
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('An older answer');
+  });
+
+  it('waits for Korean or Japanese text composition to finish before accepting a submission', async () => {
+    data = { decks: [decks[0]], cards: [{ ...card('word', 'a'), ...makeDraft('word', ['apple', '사과', 'I ate an apple.']) }] };
+    await render(); await click(node.querySelector('.hero-action'));
+    await enterAnswer('사과');
+    const input = node.querySelector<HTMLInputElement>('.review-answer-form input')!;
+    await act(async () => input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })));
+    await click(byText('정답과 비교'));
+    expect(node.querySelector('.review-answer-form')).not.toBeNull();
+    await act(async () => input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })));
+    await click(byText('정답과 비교'));
+    expect(node.querySelector('.review-answer-result')?.textContent).toBe('정답과 일치해요');
+  });
+});
 
 describe('deck-scoped review', () => {
   it('shows a text-only Review button and asks which deck before starting', async () => {
