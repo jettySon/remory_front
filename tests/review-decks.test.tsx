@@ -79,11 +79,19 @@ describe('optional typed answers', () => {
   it('compares the stored word meaning and cloze answer before collecting a rating', async () => {
     const word = makeDraft('word', ['미루다', 'put off', 'They put off the call.']);
     const cloze = makeDraft('cloze', ['We ___ the meeting.', 'put off']);
-    data = { decks: [decks[0]], cards: [{ ...card('word', 'a'), ...word }, { ...card('cloze', 'a'), ...cloze }] };
+    const explanation = 'put off는 일정을 뒤로 미룰 때 써요.';
+    data = { decks: [decks[0]], cards: [
+      { ...card('word', 'a'), ...word, explanation }, { ...card('cloze', 'a'), ...cloze },
+    ] };
     await render(); await click(node.querySelector('.hero-action'));
     expect(node.querySelector('.review-answer-form')).toBeNull();
+    expect(node.textContent).not.toContain(explanation);
     await enterAnswer('  PUT   OFF  ');
+    expect(node.textContent).not.toContain(explanation);
     await click(byText('정답과 비교'));
+    const note = node.querySelector('.flashcard .flashcard-explanation');
+    expect(note?.textContent).toBe('해설' + explanation);
+    expect(node.querySelector('.flashcard')?.getAttribute('aria-describedby')?.split(' ')).toContain(note?.id);
     expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('put off');
     expect(node.querySelector('.review-answer-context')?.textContent).toBe('They put off the call.');
     expect(node.querySelector('.review-entered-answer')?.textContent).toBe('내 답 · PUT   OFF');
@@ -100,6 +108,7 @@ describe('optional typed answers', () => {
     expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('put off');
     expect(node.querySelector('.review-answer-context')?.textContent).toBe('We put off the meeting.');
     expect(node.querySelector('.review-answer-result')?.textContent).toContain('표기가 달라요');
+    expect(node.querySelector('.flashcard-explanation')).toBeNull();
     await click(node.querySelector('.rating-hard'));
     expect(record).toHaveBeenLastCalledWith('cloze', 'hard', 'scheduled', expect.any(String), 'self_recalled');
   });

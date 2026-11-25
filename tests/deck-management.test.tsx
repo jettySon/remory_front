@@ -54,6 +54,23 @@ describe('deck management across guest and account storage', () => {
     expect(state.studyLogs).toEqual(before.logs);
   });
 
+  it('saves optional explanations on the device and clears them without changing review data', async () => {
+    guest(); await render();
+    const original = readGuestStudy().data;
+    const explanation = 'A short reason to remember.';
+    await act(async () => { expect(await state.createCards('first', [{ front: 'Why?', back: 'Answer', explanation }])).toBe(true); });
+    expect(readGuestStudy().data.cards.find((item) => item.front === 'Why?')?.explanation).toBe(explanation);
+
+    const card = original.cards[0];
+    const fields = { front: card.front, back: card.back };
+    await act(async () => { expect(await state.editCard(card.id, { ...fields, explanation })).toBe(true); });
+    await act(async () => { expect(await state.editCard(card.id, fields)).toBe(true); });
+    expect(readGuestStudy().data.cards[0]).toEqual({ ...card, explanation });
+    await act(async () => { expect(await state.editCard(card.id, { ...fields, explanation: '' })).toBe(true); });
+    expect(readGuestStudy().data.cards[0]).toEqual(card);
+    expect(readGuestStudy().data.logs).toEqual(original.logs);
+  });
+
   it('removes only a guest deck and its dependent cards and logs, including the last deck', async () => {
     guest(); await render();
     await act(async () => { expect(await state.deleteDeck('first')).toBe(true); });

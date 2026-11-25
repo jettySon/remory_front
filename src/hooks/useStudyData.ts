@@ -425,6 +425,8 @@ export function useStudyData() {
   }
 
   function editCard(cardId: string, content: CardContent) {
+    const { explanation, ...fields } = content;
+    const changes = explanation == null ? fields : { ...fields, explanation: explanation.trim() || undefined };
     return updateStudy(
       (data) => {
         if (!data.cards.some((card) => card.id === cardId)) {
@@ -432,7 +434,7 @@ export function useStudyData() {
         }
         return {
           ...data,
-          cards: data.cards.map((card) => (card.id === cardId ? { ...card, ...content } : card)),
+          cards: data.cards.map((card) => (card.id === cardId ? { ...card, ...changes } : card)),
         };
       },
       async (token) => {

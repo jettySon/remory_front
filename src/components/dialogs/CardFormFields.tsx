@@ -8,6 +8,8 @@ export function CardFormFields({
   kind,
   values,
   onChange,
+  explanation,
+  onExplanationChange,
   theme,
   labels = cardFields[kind].fields,
   saving = false,
@@ -15,6 +17,8 @@ export function CardFormFields({
   kind: CardKind;
   values: string[];
   onChange: (values: string[]) => void;
+  explanation: string;
+  onExplanationChange: (value: string) => void;
   theme?: DeckTheme;
   labels?: MessageKey[];
   saving?: boolean;
@@ -38,6 +42,18 @@ export function CardFormFields({
           />
         </label>
       ))}
+      <label className="card-explanation-field">
+        {t('cards.field.explanationOptional')}
+        <Field
+          as="textarea"
+          disabled={saving}
+          rows={2}
+          maxLength={240}
+          placeholder={t('cards.field.explanationPlaceholder')}
+          value={explanation}
+          onChange={(event) => onExplanationChange(event.target.value)}
+        />
+      </label>
       {values.some((value) => value?.trim()) && (
         <div className={`mini-preview ${theme ?? ''}`}>
           <small>{t('cards.preview', { type: t(cardFields[kind].label) })}</small>

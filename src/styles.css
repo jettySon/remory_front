@@ -581,6 +581,7 @@ button { border: 0; }
   line-height: 1.5;
 }
 .sheet-form textarea { resize: vertical; }
+.card-explanation-field textarea::placeholder { color: var(--field-hint); }
 .sheet-form :is(input, textarea, .select-trigger):focus,
 .select-trigger[aria-expanded="true"] {
   border-color: var(--field-focus);
@@ -1527,6 +1528,15 @@ a.settings-option { text-decoration: none; }
 .review-answer-context { margin-bottom: 3px; white-space: pre-wrap; }
 .review-entered-answer { font-weight: 650; }
 .review-answer-result { font-size: 11px; }
+.flashcard-explanation {
+  display: grid; gap: 4px; width: 100%; max-width: 310px; margin-block: 4px 8px;
+  padding: 9px 12px; border-radius: 13px; background: #f2eaf7; color: #584463;
+  font-size: 13px; line-height: 1.55; text-align: start; overflow-wrap: anywhere;
+}
+.flashcard-explanation strong { color: #725580; font-size: 11px; font-weight: 720; }
+.flashcard-explanation > span { white-space: pre-wrap; }
+[data-theme="dark"] .flashcard-explanation { background: #40304d; color: #ede1f3; }
+[data-theme="dark"] .flashcard-explanation strong { color: #d8bfe8; }
 @media (hover: hover) {
   .review-type-answer:hover { background: #e8dbf1; }
   .review-skip-answer:hover { background: #f4ebf7; }

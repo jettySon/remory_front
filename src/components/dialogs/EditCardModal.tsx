@@ -23,6 +23,7 @@ export function EditCardModal({
   const { t } = useLanguage();
   const [{ kind, labels, values: original }] = useState(() => readCardEditFields(card));
   const [values, setValues] = useState(original);
+  const [explanation, setExplanation] = useState(card.explanation ?? '');
   const [error, setError] = useState('');
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -33,7 +34,7 @@ export function EditCardModal({
       setError(t(...issue));
       return;
     }
-    onSave(makeCardEdit(card, kind, values));
+    onSave({ ...makeCardEdit(card, kind, values), explanation: explanation.trim() });
   }
 
   return (
@@ -44,6 +45,8 @@ export function EditCardModal({
           labels={labels}
           values={values}
           onChange={setValues}
+          explanation={explanation}
+          onExplanationChange={setExplanation}
           saving={saving}
           theme={theme}
         />

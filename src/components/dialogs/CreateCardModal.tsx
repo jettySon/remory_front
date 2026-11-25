@@ -30,6 +30,7 @@ export function CreateCardModal({
   const defaultKind = (item?: Deck) => deckKinds.find((type) => type.icon === item?.icon)?.card ?? 'basic';
   const [kind, setKind] = useState<CardKind>(() => defaultKind(deck));
   const [values, setValues] = useState<string[]>([]);
+  const [explanation, setExplanation] = useState('');
   const [bulk, setBulk] = useState(false);
   const [input, setInput] = useState('');
   const [source, setSource] = useState<'paste' | 'excel'>('paste');
@@ -56,11 +57,10 @@ export function CreateCardModal({
         return;
       }
     }
-    if (entries.length)
-      onCreate(
-        deck.id,
-        entries.map((entry) => makeDraft(kind, entry.values)),
-      );
+    const drafts = entries.map((entry) => makeDraft(kind, entry.values));
+    const note = explanation.trim();
+    if (!bulk && note) drafts[0].explanation = note;
+    if (drafts.length) onCreate(deck.id, drafts);
   };
   return (
     <Modal title={t('cards.add')} onClose={onClose}>
@@ -156,7 +156,15 @@ export function CreateCardModal({
             )}
           </div>
         ) : (
-          <CardFormFields kind={kind} values={values} onChange={setValues} theme={deck?.theme} />
+          <CardFormFields
+            kind={kind}
+            values={values}
+            onChange={setValues}
+            explanation={explanation}
+            onExplanationChange={setExplanation}
+            theme={deck?.theme}
+            saving={saving}
+          />
         )}
         {error && (
           <p className="form-error" role="alert">

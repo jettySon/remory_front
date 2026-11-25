@@ -108,6 +108,14 @@ export function ReviewPage({
   const comparison = flipped && enteredAnswer !== undefined && typeableAnswer
     ? { ...typeableAnswer, answer: enteredAnswer }
     : undefined;
+  const explanation = flipped ? current.explanation?.trim() : undefined;
+  const expectedId = answerId + '-expected';
+  const explanationId = answerId + '-explanation';
+  const description = [
+    comparison || explanation ? expectedId : '',
+    comparison ? answerId : '',
+    explanation ? explanationId : '',
+  ].filter(Boolean).join(' ');
   const ratingPrompt = mode === 'scheduled' && !choices.length ? 'review.firstRecallPrompt' : 'review.ratingPrompt';
   return (
     <div className="page review-page">
@@ -131,7 +139,7 @@ export function ReviewPage({
         ref={answerCard}
         onClick={flipCard}
         aria-label={flipped ? t('review.showQuestion') : t('review.showAnswer')}
-        aria-describedby={comparison ? `${answerId}-expected ${answerId}` : undefined}
+        aria-describedby={description || undefined}
       >
         <span className="flashcard-top">
           <span>{flipped ? t('cards.field.correct') : t(cardFields[current.kind ?? 'basic'].label)}</span>
@@ -139,10 +147,16 @@ export function ReviewPage({
         </span>
         <div className={`flashcard-content${comparison ? ' has-answer-comparison' : ''}`} key={flipped ? 'answer' : 'question'}>
           <span className="flashcard-emoji">{flipped ? '✦' : '☁'}</span>
-          <h2 id={comparison ? `${answerId}-expected` : undefined}>
+          <h2 id={description ? expectedId : undefined}>
             {flipped ? comparison?.expected ?? current.back : current.front}
           </h2>
           {comparison && <ReviewAnswerFeedback id={answerId} {...comparison} />}
+          {explanation && (
+            <span className="flashcard-explanation" id={explanationId}>
+              <strong>{t('cards.field.explanation')}</strong>
+              <span dir="auto">{explanation}</span>
+            </span>
+          )}
         </div>
         <span className="flashcard-bottom">
           <CardReviewHistory review={lastReview} />

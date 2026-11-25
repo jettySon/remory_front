@@ -12,6 +12,7 @@ export type StudyCard = {
   repetitions: number;
   kind?: CardKind;
   choices?: string[];
+  explanation?: string;
 };
 export type ReviewMode = 'scheduled' | 'focus' | 'free';
 export type FirstRecall = 'self_recalled' | 'self_missed' | 'choice_correct' | 'choice_incorrect' | 'choice_revealed';
@@ -25,5 +26,5 @@ export type ReviewLog = {
 };
 
 export type CardKind = 'basic' | 'word' | 'cloze' | 'choice';
-export type CardContent = Pick<StudyCard, 'front' | 'back' | 'choices'>;
+export type CardContent = Pick<StudyCard, 'front' | 'back' | 'choices' | 'explanation'>;
 export type CardDraft = CardContent & Pick<StudyCard, 'kind'>;
