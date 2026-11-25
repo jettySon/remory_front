@@ -144,6 +144,17 @@ describe('optional typed answers', () => {
 });
 
 describe('deck-scoped review', () => {
+  it('opens the deck picker from a reminder even when only one deck exists', async () => {
+    data = { decks: [decks[0]], cards: allCards.filter((item) => item.deckId === 'a') };
+    window.history.replaceState(null, '', '/?review=scheduled');
+    await render();
+    expect(window.location.search).toBe('');
+    expect(node.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('복습할 덱');
+    expect(node.querySelector('.flashcard')).toBeNull();
+    await chooseDeck('Language');
+    expect(node.querySelector('.flashcard-content h2')?.textContent).toBe('language-due');
+  });
+
   it('shows a text-only Review button and asks which deck before starting', async () => {
     await render();
     const action = node.querySelector('.hero-action')!;

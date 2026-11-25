@@ -78,6 +78,7 @@ export const privacyCopies: Record<Locale, PrivacyCopy> = {
       { id: 'storage', title: '쿠키와 기기 저장소', paragraphs: [
         '로그인 유지용 remory_refresh 쿠키는 HttpOnly·SameSite=Lax로 설정하고, HTTPS 환경에서는 Secure를 적용합니다. 브라우저 보관 기간은 400일로 발급하고 갱신할 때마다 연장합니다. 브라우저 정책으로 먼저 삭제될 수 있습니다. Google 요청을 브라우저와 연결하는 remory_google_browser 쿠키는 1시간으로 설정합니다.',
         '기기 저장소에는 비회원 학습 내용, 테마·언어 설정, 계정 표시용 이메일·ID·연결 상태, 탭 간 로그인 변경 알림과 미완료 로그아웃 표시가 저장될 수 있습니다. 접근 토큰은 메모리에서 사용하고, 이전 버전의 로그인 저장정보는 전환 과정에서 정리합니다. 앱을 열기 위한 화면 파일과 이미지 등은 브라우저 캐시에 보관할 수 있습니다.',
+        '안드로이드의 알림 시간과 마지막 알림 날짜, 가장 이른 카드 복습일은 기기에 저장합니다. 로그인 상태에서는 알림을 보낼 시점에 로그인 유지용 쿠키로 서버에 복습할 카드가 있는지만 확인합니다. 알림은 앱 또는 기기 설정에서 끌 수 있습니다.',
         '브라우저 설정에서 쿠키를 차단하거나 사이트 데이터를 지울 수 있습니다. 차단하면 로그인·자동 갱신이 제한될 수 있으며, 기기 데이터를 지우거나 앱을 삭제하면 비회원 기록이 없어질 수 있습니다. 서버에 저장한 회원 기록은 다시 로그인해 불러올 수 있습니다.',
       ] },
       { id: 'deletion', title: '삭제와 파기 방법', paragraphs: [
@@ -156,6 +157,7 @@ export const privacyCopies: Record<Locale, PrivacyCopy> = {
       { id: 'storage', title: 'Cookies and device storage', paragraphs: [
         'The remory_refresh cookie uses HttpOnly and SameSite=Lax, with Secure on HTTPS. Its browser lifetime is 400 days, renewed on refresh; browsers can remove it sooner. The remory_google_browser browser-linking cookie is set for 1 hour.',
         'Device storage can contain guest study content, theme/language preferences, display-only account email/ID/linking status, cross-tab authentication notifications and a pending-logout flag. Access tokens stay in memory. Legacy login storage is cleared during transition. App-screen files and images can be cached locally.',
+        'On Android, the device stores the reminder time, last reminder date and earliest card due date. For signed-in users, Remory uses the session cookie to check with its server whether cards are due when a reminder is scheduled. You can turn off reminders in the app or device settings.',
         'You can block cookies or clear site data in browser settings. Blocking can limit login and refresh. Clearing device data or uninstalling the app can remove guest records. Account records saved to the server can be retrieved by signing in again.',
       ] },
       { id: 'deletion', title: 'Deletion and disposal', paragraphs: [

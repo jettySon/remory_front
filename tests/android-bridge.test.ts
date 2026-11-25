@@ -52,6 +52,31 @@ describe('Android account bridge', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('shares the native bridge with login and sends only the next due time for reminder sync', async () => {
+    const native = bridge();
+    const { readReviewReminder, saveReviewReminder, syncReviewReminder } = await import('../src/platform/android');
+    const initial = readReviewReminder(new AbortController().signal);
+    const read = JSON.parse(native.postMessage.mock.calls[0][0]);
+    expect(read.type).toBe('reminderSettings');
+    native.onmessage!({ data: JSON.stringify({ id: read.id, reminder: { enabled: false, time: '19:00', allowed: false } }) });
+    await expect(initial).resolves.toEqual({ enabled: false, time: '19:00', allowed: false });
+
+    const saved = saveReviewReminder(true, '08:30');
+    const update = JSON.parse(native.postMessage.mock.calls[1][0]);
+    expect(update).toMatchObject({ type: 'setReminder', enabled: true, time: '08:30' });
+    native.onmessage!({ data: JSON.stringify({ id: update.id, reminder: { enabled: true, time: '08:30', allowed: true } }) });
+    await expect(saved).resolves.toEqual({ enabled: true, time: '08:30', allowed: true });
+
+    syncReviewReminder('guest', 1800000000000, 'ko');
+    syncReviewReminder('account', null, 'en');
+    expect(JSON.parse(native.postMessage.mock.calls[2][0])).toEqual(
+      { type: 'syncReminder', id: '', source: 'guest', dueAt: 1800000000000, locale: 'ko' },
+    );
+    expect(JSON.parse(native.postMessage.mock.calls[3][0])).toEqual(
+      { type: 'syncReminder', id: '', source: 'account', dueAt: null, locale: 'en' },
+    );
+  });
+
   it('leaves regular browsers on the existing web login flow', async () => {
     const { isAndroidApp, nativeGoogleSignIn } = await import('../src/platform/android');
     expect(isAndroidApp()).toBe(false);

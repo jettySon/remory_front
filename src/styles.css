@@ -1118,11 +1118,11 @@ button { border: 0; }
   box-shadow: 0 1px 3px #3e285e40;
   transition: transform 160ms ease;
 }
-.settings-option[aria-checked='true'] .settings-switch {
+:is(.settings-option, .reminder-toggle)[aria-checked='true'] .settings-switch {
   border-color: #8567a6;
   background: #795c98;
 }
-.settings-option[aria-checked='true'] .settings-switch::after { transform: translateX(17px); }
+:is(.settings-option, .reminder-toggle)[aria-checked='true'] .settings-switch::after { transform: translateX(17px); }
 
 [data-theme='dark'] .settings-option {
   border-color: var(--night-border);
@@ -1133,13 +1133,37 @@ button { border: 0; }
   border-color: #ab93bc;
   background: #574665;
 }
-[data-theme='dark'] .settings-option[aria-checked='true'] .settings-switch {
+[data-theme='dark'] :is(.settings-option, .reminder-toggle)[aria-checked='true'] .settings-switch {
   border-color: #d2b5ec;
   background: #ab85cd;
 }
 @media (prefers-reduced-motion: reduce) {
   .settings-switch::after { transition: none; }
 }
+
+.reminder-setting { display: grid; gap: 7px; }
+.reminder-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+}
+.reminder-toggle:disabled { opacity: .65; }
+.reminder-hint { margin: 0 0 1px; padding-inline-start: 48px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.reminder-hint button { padding: 4px 0; display: block; background: none; color: var(--accent); text-decoration: underline; }
+.reminder-time {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 2px 0 2px 48px; font-size: 13px; font-weight: 650;
+}
+.reminder-time input {
+  min-height: 42px; min-width: 0; padding: 6px 9px;
+  border: 1px solid #e9dfed; border-radius: 11px; background: #fff; color: var(--ink); font: inherit;
+}
+[data-theme='dark'] .reminder-time input { color-scheme: dark; border-color: var(--night-border); background: #372b45; }
 
 .settings-withdraw .settings-option-icon {
   color: #963950;

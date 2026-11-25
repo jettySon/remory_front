@@ -1,8 +1,8 @@
 import type { GoogleProof } from './api/google';
-import { isAndroidApp } from './platform/android';
+import { isAndroidApp, syncReviewReminder } from './platform/android';
 import { useLanguage } from './i18n/LanguageProvider';
 import type { Message } from './i18n/messages';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 import { AppHeader, BottomNav } from './components/Navigation';
 import { AccountModal } from './components/dialogs/AccountModal';
@@ -46,7 +46,7 @@ type AppModal =
   | { type: 'edit-deck' | 'delete-deck'; deckId: string };
 
 export default function App() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [theme, setTheme] = useStoredState<'light' | 'dark'>('remory-theme', 'light');
   const [page, setPage] = useState<Page>('home');
   const [openDeckId, setOpenDeckId] = useState<string>();
@@ -63,6 +63,16 @@ export default function App() {
 
   const study = useStudyData();
   const { decks, cards, studyLogs, account, token, saving, activityVersion } = study;
+  const { restoring, restoreError } = study;
+  const nextDueAt = useMemo(() => {
+    if (!isAndroidApp()) return null;
+    let earliest = Infinity;
+    for (const { dueAt } of cards) {
+      const time = Date.parse(dueAt);
+      if (time < earliest) earliest = time;
+    }
+    return Number.isFinite(earliest) ? earliest : null;
+  }, [cards]);
   const review = useReviewSession(cards, study.recordReview);
   const date = new Date();
   const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 6);
@@ -116,6 +126,21 @@ export default function App() {
     }
     previousAccountId.current = account?.id;
   }, [account]);
+
+  useEffect(() => {
+    if (isAndroidApp() && !restoring && !restoreError) {
+      syncReviewReminder(account ? 'account' : 'guest', nextDueAt, locale);
+    }
+  }, [account?.id, nextDueAt, locale, restoring, restoreError]);
+
+  useEffect(() => {
+    if (restoring || restoreError || saving) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('review') !== 'scheduled') return;
+    url.searchParams.delete('review');
+    window.history.replaceState(window.history.state, '', url);
+    setModal('scheduled-review');
+  }, [restoring, restoreError, saving]);
 
   function afterAccountChange() {
     setModalState(null);

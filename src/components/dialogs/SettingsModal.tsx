@@ -2,6 +2,7 @@ import { useLanguage } from '../../i18n/LanguageProvider';
 import { ChevronRight, Languages, Moon, ShieldCheck, UserRoundX } from 'lucide-react';
 import { LanguageField } from '../LanguageField';
 import { Modal } from '../Modal';
+import { ReviewReminderField } from '../ReviewReminderField';
 
 export function SettingsModal({
   dark,
@@ -32,6 +33,7 @@ export function SettingsModal({
           <span className="settings-option-label">{t('settings.dark')}</span>
           <span className="settings-switch" aria-hidden="true" />
         </button>
+        <ReviewReminderField />
         <div className="settings-option settings-language">
           <span className="settings-option-icon" aria-hidden="true">
             <Languages size={19} />

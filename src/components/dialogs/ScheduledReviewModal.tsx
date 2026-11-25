@@ -22,7 +22,7 @@ export function ScheduledReviewModal({ decks, cards, saving, onStart, onClose }:
 
   return (
     <Modal title={t('review.deck')} onClose={onClose}>
-      <p className="review-deck-guide">{t('review.chooseGuide')}</p>
+      <p className="review-deck-guide">{t(counts.size ? 'review.chooseGuide' : 'review.empty')}</p>
       <div className="review-deck-picker">
         {decks.map((deck) => {
           const count = counts.get(deck.id) ?? 0;
