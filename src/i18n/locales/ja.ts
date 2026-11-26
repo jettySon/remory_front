@@ -92,6 +92,8 @@ const messages = {
   'decks.color.peach': "ピーチ",
   'decks.color.butter': "バターイエロー",
   'decks.color.blue': "スカイブルー",
+  'decks.color.sage': "セージミント",
+  'decks.color.fog': "フォググレー",
   'decks.created': "デッキを作成しました。",
   'decks.open': "デッキを開く",
   'decks.reviewAll': "このデッキの{count}枚を復習する",

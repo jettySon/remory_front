@@ -90,6 +90,8 @@ const ko = {
   'decks.color.peach': "복숭아",
   'decks.color.butter': "버터 옐로",
   'decks.color.blue': "하늘색",
+  'decks.color.sage': "세이지 민트",
+  'decks.color.fog': "안개빛 그레이",
   'decks.created': "덱을 만들었어요.",
   'decks.open': "덱 열기",
   'decks.reviewAll': "이 덱의 카드 {count}장 다시 보기",

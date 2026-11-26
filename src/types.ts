@@ -1,6 +1,6 @@
 export type Page = 'home' | 'decks' | 'review' | 'calendar' | 'stats' | 'deck-detail';
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
-export type DeckTheme = 'peach' | 'lavender' | 'butter' | 'blue';
+export type DeckTheme = 'peach' | 'lavender' | 'butter' | 'blue' | 'sage' | 'fog';
 export type Deck = { id: string; title: string; subtitle: string; theme: DeckTheme; icon: string };
 export type DeckContent = Pick<Deck, 'title' | 'subtitle' | 'theme'>;
 export type StudyCard = {

@@ -92,6 +92,8 @@ const messages = {
   'decks.color.peach': "蜜桃色",
   'decks.color.butter': "奶油黄",
   'decks.color.blue': "天蓝色",
+  'decks.color.sage': "鼠尾草绿",
+  'decks.color.fog': "雾灰色",
   'decks.created': "已创建卡组。",
   'decks.open': "打开卡组",
   'decks.reviewAll': "复习此卡组的全部 {count} 张卡片",

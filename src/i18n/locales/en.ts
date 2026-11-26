@@ -92,6 +92,8 @@ const messages = {
   'decks.color.peach': "Peach",
   'decks.color.butter': "Butter yellow",
   'decks.color.blue': "Sky blue",
+  'decks.color.sage': "Sage mint",
+  'decks.color.fog': "Fog gray",
   'decks.created': "Deck created.",
   'decks.open': "Open deck",
   'decks.reviewAll': ["Review the {count} card in this deck","Review all {count} cards in this deck"],
