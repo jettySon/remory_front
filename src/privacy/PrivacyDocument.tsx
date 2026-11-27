@@ -19,10 +19,9 @@ export function PrivacyDocument({ copy, config }: { copy: PrivacyCopy; config: P
         <strong>{copy.draftTitle}</strong><p>{copy.draftNote}</p>
       </aside>}
       <dl className="privacy-operator">
-        <div><dt>{copy.operator}</dt><dd>{config.operatorName || copy.notSet}</dd></div>
+        <div><dt>{copy.contactTeam}</dt><dd>{config.contactTeamName || copy.notSet}</dd></div>
         <div><dt>{copy.contact}</dt><dd>{config.contactEmail
           ? <a href={`mailto:${encodeURIComponent(config.contactEmail)}`}>{config.contactEmail}</a> : copy.notSet}</dd></div>
-        <div><dt>{copy.country}</dt><dd>{config.serverCountry === 'KR' ? copy.korea : config.serverCountry || copy.notSet}</dd></div>
       </dl>
       <nav className="privacy-contents" aria-label={copy.contents}>
         <h2>{copy.contents}</h2>
@@ -47,7 +46,7 @@ export function PrivacyDocument({ copy, config }: { copy: PrivacyCopy; config: P
       <footer className="privacy-contact">
         <h2>{copy.contactTitle}</h2>
         <p>{copy.contactNote}</p>
-        <strong>{config.operatorName || copy.notSet}</strong>
+        <strong>{config.contactTeamName || copy.notSet}</strong>
         {config.contactEmail && <a href={`mailto:${encodeURIComponent(config.contactEmail)}`}>{config.contactEmail}</a>}
       </footer>
     </article>

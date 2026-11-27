@@ -9,7 +9,6 @@ import { privacyCopies } from '../src/privacy/content';
 import { privacyConfig, isPrivacyDraft } from '../src/privacy/config';
 import { SettingsModal } from '../src/components/dialogs/SettingsModal';
 import { AccountModal } from '../src/components/dialogs/AccountModal';
-import type { Locale } from '../src/i18n/messages';
 
 vi.mock('../src/components/GoogleSignInButton', () => ({ GoogleSignInButton: () => null }));
 
@@ -24,13 +23,18 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); node.remove(); });
 
 describe('public privacy policy', () => {
-  it.each(['ko', 'en', 'ja', 'zh-CN'] as Locale[])('opens in %s without logging in or loading external services', async (locale) => {
+  it.each([
+    ['ko', '호주'], ['en', 'Australia'], ['ja', 'オーストラリア'], ['zh-CN', '澳大利亚'],
+  ] as const)('opens in %s without logging in or loading external services', async (locale, destination) => {
     localStorage.setItem('remory-locale', JSON.stringify(locale));
     await act(async () => root.render(<LanguageProvider title="privacy.title"><PrivacyPage /></LanguageProvider>));
     expect(node.querySelector('h1')?.textContent).toBe(privacyCopies[locale].title);
     expect(document.title).toBe(privacyCopies[locale].title);
     expect(fetch).not.toHaveBeenCalled();
-    expect(node.textContent).toContain(privacyCopies[locale].korea);
+    const countryFields = [...node.querySelectorAll('dd')].filter((field) => field.textContent === destination);
+    expect(countryFields).toHaveLength(1);
+    expect(countryFields[0]?.closest('section')?.id).toBe('privacy-overseas');
+    expect(node.textContent).not.toMatch(/시드니|Sydney|シドニー|悉尼|ap-southeast-2/);
     expect(node.querySelector('iframe, script')).toBeNull();
     expect(node.querySelector('a[href="/account-deletion/"]')).not.toBeNull();
     const sections = [...node.querySelectorAll('.privacy-section')];
@@ -54,16 +58,29 @@ describe('public privacy policy', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('includes the full readable document in server-rendered HTML and marks missing operational details as draft', () => {
+  it('renders the finalized date, hosting and contact information in the public HTML', () => {
     const html = renderToStaticMarkup(<PrivacyDocument copy={privacyCopies.ko} config={privacyConfig} />);
-    expect(isPrivacyDraft(privacyConfig)).toBe(true);
-    expect(html).toContain('운영 정보 확인 중인 초안');
+    expect(isPrivacyDraft(privacyConfig)).toBe(false);
+    expect(html).toContain('<dt>이전 국가</dt><dd>호주</dd>');
+    expect(html).toContain('AWS Lightsail');
+    expect(html).toContain('<dt>시행일</dt><dd><time dateTime="2026-11-27">2026-11-27</time>');
+    expect(html).toContain('<dt>개인정보 문의 담당</dt><dd>리모리 CS 팀</dd>');
+    expect(html).toContain('href="mailto:remory.mong%40gmail.com">remory.mong@gmail.com</a>');
+    expect(html).not.toContain('운영 정보 확인 중인 초안');
     expect(html).toContain('비회원 기록과 엑셀 파일');
     expect(html).toContain('400일');
-    expect(html).toContain('Gmail SMTP');
+    expect(html).toContain('현재 운영 서비스에서는 비밀번호 재설정 인증 메일을 발송하지 않습니다.');
     expect(html).toContain('/account-deletion/');
     expect(html).not.toContain('mailto:null');
     expect(html).not.toContain('<script');
+  });
+
+  it('labels a policy without required publication details as a draft', () => {
+    const config = { ...privacyConfig, contactEmail: null };
+    const html = renderToStaticMarkup(<PrivacyDocument copy={privacyCopies.ko} config={config} />);
+    expect(isPrivacyDraft(config)).toBe(true);
+    expect(html).toContain(privacyCopies.ko.draftTitle);
+    expect(html).not.toContain('mailto:');
   });
 
   it('makes the same public URL available before login and from guest settings', async () => {

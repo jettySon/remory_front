@@ -1,21 +1,19 @@
 // Public policy metadata only. Never copy SMTP credentials or private .env values here.
 export type PrivacyConfig = {
-  operatorName: string | null;
+  contactTeamName: string | null;
   contactEmail: string | null;
-  serverCountry: string | null;
   effectiveDate: string | null;
   updatedAt: string;
 };
 
 export const privacyConfig: PrivacyConfig = {
-  operatorName: null,
-  contactEmail: null,
-  serverCountry: 'KR', // 한국 내 직접 운영 서버로 배포할 예정
-  effectiveDate: null,
-  updatedAt: '2026-11-19',
+  contactTeamName: '리모리 CS 팀',
+  contactEmail: 'remory.mong@gmail.com',
+  effectiveDate: '2026-11-27',
+  updatedAt: '2026-11-27',
 };
 
 export function isPrivacyDraft(config: PrivacyConfig) {
-  return !config.operatorName?.trim() || !config.contactEmail?.trim()
-    || !config.serverCountry?.trim() || !config.effectiveDate;
+  return !config.contactTeamName?.trim() || !config.contactEmail?.trim()
+    || !config.effectiveDate;
 }
